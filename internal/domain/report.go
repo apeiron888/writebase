@@ -20,7 +20,16 @@ type Report struct {
 	ResolvedAt *int64
 }
 
+// IReportRepository interface for report operations
+
 type IReportRepository interface {
+	CreateReport(ctx context.Context, report *Report) error
+	GetReports(ctx context.Context, filter map[string]interface{}) ([]*Report, error)
+	UpdateReportStatus(ctx context.Context, reportID string, status ReportStatus) error
+}
+
+// IReportUsecase interface for report operations
+type IReportUsecase interface {
 	CreateReport(ctx context.Context, report *Report) error
 	GetReports(ctx context.Context, filter map[string]interface{}) ([]*Report, error)
 	UpdateReportStatus(ctx context.Context, reportID string, status ReportStatus) error
