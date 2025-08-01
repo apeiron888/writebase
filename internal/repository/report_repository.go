@@ -71,7 +71,7 @@ func (r *MongoReportRepository) UpdateReportStatus(ctx context.Context, reportID
 		return err
 	}
 	if res.MatchedCount == 0 {
-		return errors.New("report not found")
+		return domain.ErrReportNotFound
 	}
 	return nil
 }
