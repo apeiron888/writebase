@@ -20,7 +20,7 @@ type Article struct {
     PublishedAt    time.Time
     UpdatedAt      time.Time
     ViewCount      int
-    LikeCount      int
+    ClapCount      int
 }
 // Embedded Content Block Types
 type ContentBlockType string
@@ -116,17 +116,19 @@ type IArticleRepository interface {
 	// CRUD Operations
 	Create(ctx context.Context, article *Article) error
 	GetByID(ctx context.Context, id string) (*Article, error)
+	GetBySlug(ctx context.Context, slug string) (*Article, error)
 	Update(ctx context.Context, article *Article) error
 	Delete(ctx context.Context, id string) error
 	
 	// Content Discovery
 	List(ctx context.Context, filter ArticleFilter, pagination Pagination) ([]*Article, error)
 	GetTrending(ctx context.Context, limit int) ([]*Article, error)
-	GetRelated(ctx context.Context, articleID string, limit int) ([]*Article, error)
+	GetRelated(ctx context.Context, articleID string, tags []string, limit int) ([]*Article, error)
 	
 	// Metrics
-	IncrementViews(ctx context.Context, articleID string) error
-	IncrementClaps(ctx context.Context, articleID string, count int) error
+	ViewArticle(ctx context.Context, articleID string) error
+	ClapArticle(ctx context.Context, articleID string, count int) error
+	UnclapArticle(ctx context.Context, articleID, userID string, count int) error 
 	
 	// Search
 	Search(ctx context.Context, query string, pagination Pagination) ([]*Article, error)
