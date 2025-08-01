@@ -33,7 +33,7 @@ func LoadEnv() (*Config, error) {
 		missing = append(missing, "MONGODB_URI")
 	}
 	if cfg.MongodbName == "" {
-		missing = append(missing, "MONGODB_DBNAME")
+		missing = append(missing, "MONGODB_NAME")
 	}
 	if cfg.JwtSecret == "" {
 		missing = append(missing, "JWT_SECRET")
