@@ -22,3 +22,14 @@ type ICommentRepository interface {
 	GetByUserID(ctx context.Context, userID string) ([]*Comment, error)
 	GetReplies(ctx context.Context, parentID string) ([]*Comment, error)
 }
+
+// usecase interface for comment operations
+type ICommentUsecase interface {
+	CreateComment(ctx context.Context, comment *Comment) error
+	UpdateComment(ctx context.Context, comment *Comment) error
+	DeleteComment(ctx context.Context, commentID string) error
+	GetCommentByID(ctx context.Context, commentID string) (*Comment, error)
+	GetCommentsByPostID(ctx context.Context, postID string) ([]*Comment, error)
+	GetCommentsByUserID(ctx context.Context, userID string) ([]*Comment, error)
+	GetReplies(ctx context.Context, parentID string) ([]*Comment, error)
+}
