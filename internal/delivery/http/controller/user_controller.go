@@ -24,13 +24,13 @@ func (uc *UserController) Register(c *gin.Context ){
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	err := uc.userUsercase.Register(ctx, user.ToDomainUser())
+	err := uc.userUsercase.Register(ctx, user.ToRegisterInput())
 	if err != nil{
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
 		return
 	}
 
-	c.IndentedJSON(http.StatusCreated, gin.H{"message": domain.err})
+	c.IndentedJSON(http.StatusCreated, gin.H{"message": "successfully registerd"})
 }
 
 func (uc *UserController)Login(c *gin.Context){
@@ -47,7 +47,7 @@ func (uc *UserController)Login(c *gin.Context){
 	deviceInfo := c.GetHeader("Device-Info")
 	metadata := &domain.AuthMetadata{IP: iP, UserAgent: userAgent, DeviceInfo: deviceInfo}
 
-	jwtToken, err := uc.userUsercase.Login(ctx, user.ToDomainUser(), metadata)
+	jwtToken, err := uc.userUsercase.Login(ctx, user.ToLoginInput(), metadata)
 	if err != nil{
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message":err.Error()})
 		return
@@ -58,7 +58,7 @@ func (uc *UserController)Login(c *gin.Context){
 }
 
 
-func (uc *UserController) Logout(c *gin.Context) {
+func (uc *UserController) Logout (c *gin.Context) {
     ctx := c.Request.Context()
     var req LogoutRequest
     if err := c.ShouldBindJSON(&req); err != nil {

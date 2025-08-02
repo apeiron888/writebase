@@ -15,12 +15,11 @@ type RegisterRequest struct {
 }
 
 //rigister user to domain user
-func (r *RegisterRequest) ToDomainUser() *domain.User {
-    return &domain.User{
+func (r *RegisterRequest) ToRegisterInput() *domain.RegisterInput {
+    return &domain.RegisterInput{
         Username: r.Username,
         Email:    r.Email,
         Password: r.Password, 
-        // Add other fields as needed
     }
 }
 
@@ -30,10 +29,9 @@ type LoginRequest struct {
     Password        string `json:"password" binding:"required"`
 }
 // login uer to domain user 
-func (l *LoginRequest) ToDomainUser() *domain.User {
-    return &domain.User{
-        Email:    l.EmailOrUsername,
-        Username: l.EmailOrUsername,
+func (l *LoginRequest) ToLoginInput() *domain.LoginInput{
+    return &domain.LoginInput{
+        EmailOrUsername: l.EmailOrUsername,
         Password: l.Password,
     }
 }
@@ -69,7 +67,7 @@ type ForgotPasswordRequest struct {
 // ResetPasswordRequest for resetting password using a token
 type ResetPasswordRequest struct {
     Token       string `json:"token" binding:"required"`
-    NewPassword string `json:"new_password" binding:"required,min=6"`
+    NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
 // ChangePasswordRequest for changing password after login

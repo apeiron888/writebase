@@ -17,8 +17,10 @@ type User struct {
     Email          string    
     Password       string    
     Role           UserRole  
-    Bio            string    
-    ProfileImage   string    
+    Bio            string
+    BookMark       []string    
+    ProfileImage   string
+    Verified       bool  
     IsActive       bool      
     CreatedAt      time.Time 
     UpdatedAt      time.Time 
@@ -52,15 +54,15 @@ type IUserRepository interface {
     DeleteUser(ctx context.Context, id string) error
     PromoteToAdmin(ctx context.Context, userID string) error
     DemoteToUser(ctx context.Context, userID string) error
-}
-
-type ITokenRepository interface {
-    StoreToken(token *RefreshToken) error
-    GetByToken(token string) (*RefreshToken, error)
-    GetValidByUser(userID string) ([]*RefreshToken, error)
-    RevokeToken(token string) error
+// token related
+    StoreToken(ctx context.Context, token *RefreshToken) error
+    GetByToken(ctx context.Context, token string) (*RefreshToken, error)
+    GetValidByUser(ctx context.Context,userID string) ([]*RefreshToken, error)
+    RevokeToken(ctx context.Context,token string) error
     DeleteExpiredTokens() error
-    RevokeAllByUser(userID string) error
+    RevokeAllByUser(ctx context.Context, userID string) error
+    SaveVerificationToken(ctx context.Context,emailToken *EmailVerificationToken) error
+    GetVerificationToken(ctx context.Context, emailToken string) (*EmailVerificationToken, error)
 }
 
 type IPasswordService interface {
@@ -74,21 +76,24 @@ type ITokenService interface {
     GenerateRefreshToken(user *User) (string, error)
     ValidateAccessToken(token string) (*AuthClaims, error)
     ValidateRefreshToken(token string) (*AuthClaims, error)
+
 }
 
-type IEmailSender interface {
+type IEmailService interface {
     SendPasswordReset(email, token string) error
     SendVerificationEmail(email, code string) error
 }
 
 type IUserUsecase interface {
-	Register(ctx context.Context, user *User) error
-	Login(ctx context.Context, user *User, metadata *AuthMetadata) (*LoginResult, error)
+	Register(ctx context.Context, registerInput *RegisterInput) error
+    VerifyEmail(ctx context.Context, token string) error
+	Login(ctx context.Context, loginInput *LoginInput, metadata *AuthMetadata) (*LoginResult, error)
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string, metadata *AuthMetadata) (*LoginResult, error)
 
 	GetProfile(ctx context.Context, userID string) (*User, error)
-	UpdateProfile(ctx context.Context, userID string, bio, profileImage string) error
+	UpdateProfile(ctx context.Context, updateProfileInpute *UpdateProfileInput) error
+    UpdateAccount(ctx context.Context, updateAccoutInput *UpdateAccountInput)
 	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
     ForgotPassword(ctx context.Context, email string) error
     ResetPassword(ctx context.Context, resetToken, newPassword string) error
@@ -104,4 +109,34 @@ type AuthMetadata struct {
 	IP         string
 	UserAgent  string
 	DeviceInfo string
+}
+type RegisterInput struct {
+    Username string
+    Email    string
+    Password string
+}
+
+type LoginInput struct {
+    EmailOrUsername string
+    Password        string
+}
+
+type UpdateProfileInput struct {
+    UserID       string
+    Bio          string
+    ProfileImage string
+}
+
+type UpdateAccountInput struct {
+    UserID   string
+    Username string
+    Email    string
+}
+
+type EmailVerificationToken struct {
+    ID        string
+    UserID    string
+    Token     string
+    ExpiresAt time.Time
+    CreatedAt time.Time
 }
