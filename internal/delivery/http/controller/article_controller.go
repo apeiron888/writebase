@@ -10,7 +10,7 @@ type ArticleHandler struct {
 	UseCase domain.IArticleUsecase
 }
 
-func NewArticleHandler(usecase *domain.IArticleUsecase) *ArticleHandler{
+func NewArticleHandler(usecase domain.IArticleUsecase) *ArticleHandler{
 	return &ArticleHandler{
 		UseCase: usecase,
 	}
@@ -60,9 +60,7 @@ func (h *ArticleHandler) FilterArticles(ctx *gin.Context)
 //===========================================================================//
 //                             Engagement                                    //
 //===========================================================================//
-func (h *ArticleHandler) ClapArticle(ctx *gin.Context)
-// Generate share links
-func (h *ArticleHandler) ShareArticle(ctx *gin.Context)       
+func (h *ArticleHandler) ClapArticle(ctx *gin.Context)     
 
 //===========================================================================//
 //                 Trash Management (Author only)                            //
