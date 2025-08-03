@@ -35,32 +35,32 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	db := client.Database(cfg.MongodbName)
 
 	// Repositories
-	//.............
-	articleRepo := repository.NewArticleRepository(db, "articles")
-	clapRepo := repository.NewArticleClapRepository(db, "article_claps")
-	viewRepo := repository.NewArticleViewRepository(db, "article_views")
+commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
+reactionRepo := repository.NewMongoReactionRepository(db.Collection("reactions"))
+followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
+reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
 
-	// Usecases
-	//.........
-	clapUsecase := usecase.NewClapUsecase(clapRepo)
-	viewUsecase := usecase.NewViewUsecase(viewRepo)
-	articleUsecase := usecase.NewArticleUsecase(articleRepo, clapUsecase, viewUsecase)
+// Usecases
+commentUsecase := usecase.NewCommentUsecase(commentRepo)
+reactionUsecase := usecase.NewReactionUsecase(reactionRepo)
+followUsecase := usecase.NewFollowUsecase(followRepo)
+reportUsecase := usecase.NewReportUsecase(reportRepo)
 
-	// Auth service
-	//............
+// Controllers
+commentController := controller.NewCommentController(commentUsecase)
+reactionController := controller.NewReactionController(reactionUsecase)
+followController := controller.NewFollowController(followUsecase)
+reportController := controller.NewReportController(reportUsecase)
 
-	// Handlers
-	//.........
-	articleHandler := controller.NewArticleHandler(articleUsecase)
+// Router
+r := gin.Default()
+router.RegisterCommentRoutes(r, commentController)
+router.RegisterReactionRoutes(r, reactionController)
+router.RegisterFollowRoutes(r, followController)
+router.RegisterReportRoutes(r, reportController)
 
-	// Router
-	// Add all handlers as params
-	// Add Auth Sevice as param
-	// Add cfg.ServerPort
-	router := router.NewRouter(articleHandler)
-
-	return &Container{
-		Router:     router,
-		MongoClient: client,
-	}, nil
+return &Container{
+	   Router:     r,
+	   MongoClient: client,
+}, nil
 }
