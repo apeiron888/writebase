@@ -2,8 +2,9 @@ package controller
 
 import (
 	"net/http"
-	"starter/internal/domain"
-	dtodlv "starter/internal/delivery/http/controller/dto"
+	dtodlv "write_base/internal/delivery/http/controller/dto"
+	"write_base/internal/domain"
+
 	"github.com/gin-gonic/gin"
 )
 
