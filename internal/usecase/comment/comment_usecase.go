@@ -1,8 +1,8 @@
-package comment
+package usecase
 
 import (
 	"context"
-	"starter/internal/domain"
+	"write_base/internal/domain"
 )
 
 type CommentUsecase struct {

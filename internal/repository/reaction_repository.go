@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
-	"starter/internal/domain"
-	dtodbrep "starter/internal/repository/dto"
+	"write_base/internal/domain"
+	dtodbrep "write_base/internal/repository/dto"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

@@ -1,8 +1,8 @@
-package follow
+package usecase
 
 import (
 	"context"
-	"starter/internal/domain"
+	"write_base/internal/domain"
 )
 
 type FollowService struct {

@@ -2,18 +2,18 @@ package di
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"github.com/gin-gonic/gin"
 
 	"write_base/config"
-	"write_base/internal/repository"
-	"write_base/internal/usecase"
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
-	"write_base/internal/infrastructure"
+	"write_base/internal/repository"
+	"write_base/internal/usecase"
 )
 
 type Container struct {
