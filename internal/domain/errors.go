@@ -23,6 +23,7 @@ var (
 	ErrConflict            = Error{Code: "GEN_008", Message: "Resource conflict"}
 	ErrUnprocessableEntity = Error{Code: "GEN_009", Message: "Unprocessable entity"}
 )
+
 //===========================================================================//
 //                        Article Errors                                     //
 //===========================================================================//
@@ -40,5 +41,8 @@ var (
 	ErrArticleAlreadyPublished   = Error{Code: "ARTICLE_011", Message: "Article is already published"}
 	ErrMaxArticlesPerUser        = Error{Code: "ARTICLE_012", Message: "User has reached the article creation limit"}
 	ErrArticleSearchFailed       = Error{Code: "ARTICLE_013", Message: "Failed to search articles"}
-
+	ErrArticleNotPublished       = Error{Code: "ARTICLE_014", Message: "Article is not published"}
+	ErrArticleNotArchived        = Error{Code: "ARTICLE_015", Message: "Article is not archived"}
+	ErrNoChangesDetected         = Error{Code: "ARTICLE_016", Message: "No changes detected in the article"}
+	ErrClapLimitExceeded         = Error{Code: "ARTICLE_017", Message: "Clap limit exceeded"}
 )
