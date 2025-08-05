@@ -4,7 +4,19 @@ import (
 	"context"
 	"time"
 )
-
+//===========================================================================//
+//                               Constants                                   //
+//===========================================================================//
+var (
+	DefaultTimeout = 10 * time.Second
+	MaxContentLength = 10000
+	MaxTagsPerArticle = 10
+	MaxArticleLength = 5000
+	MaxSlugLength = 100
+	MaxTitleLength = 200
+	MaxExcerptLength = 300
+	MaxContentBlocks = 50
+)
 //===========================================================================//
 //                         Article Definition                                //
 //===========================================================================//
@@ -173,7 +185,7 @@ type IArticleUsecase interface {
 	EmptyTrash(ctx context.Context, userID string) error
 
 	// Admin
-	AdminListAllArticles(ctx context.Context, userID, userRole string, filter ArticleFilter, pag Pagination) ([]Article, int, error)
+	AdminListAllArticles(ctx context.Context, userID, userRole string, pag Pagination) ([]Article, int, error)
 	AdminHardDeleteArticle(ctx context.Context, userID, userRole, articleID string) error
 	AdminUnpublishArticle(ctx context.Context, userID, userRole, articleID string) (*Article, error)
 }
