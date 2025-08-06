@@ -45,19 +45,25 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	clapUsecase := usecase.NewClapUsecase(clapRepo)
 	viewUsecase := usecase.NewViewUsecase(viewRepo)
 	articleUsecase := usecase.NewArticleUsecase(articleRepo, clapUsecase, viewUsecase)
+	userUsecase:= usecase.NewUserUsecase()
 
 	// Auth service
 	//............
+	emailService :=infrastructure.NewEmailService(mailtrapService, cfg.BackendURL)
+	tokenService := infrastructure.NewJWTService([]byte(cfg.JwtSecret))
+	authMiddleware := infrastructure.NewMiddleware(tokenService)
 
 	// Handlers
 	//.........
 	articleHandler := controller.NewArticleHandler(articleUsecase)
+	userController := controller.NewUserController(userUsecase)
 
 	// Router
 	// Add all handlers as params
 	// Add Auth Sevice as param
 	// Add cfg.ServerPort
-	router := router.NewRouter(articleHandler)
+	r := gin.Default()
+	router.UserRouter(r, userController, authMiddleware)
 
 	return &Container{
 		Router:     router,

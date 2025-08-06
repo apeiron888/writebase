@@ -89,7 +89,8 @@ type IUserUsecase interface {
     VerifyEmail(ctx context.Context, token string) error
 	Login(ctx context.Context, loginInput *LoginInput, metadata *AuthMetadata) (*LoginResult, error)
 	Logout(ctx context.Context, refreshToken string) error
-	RefreshToken(ctx context.Context, refreshToken string, metadata *AuthMetadata) (*LoginResult, error)
+	RefreshToken(ctx context.Context, refreshToken string) (*LoginResult, error)
+    LoginOrRegisterOAuthUser(ctx context.Context, registerInput *RegisterInput, metadata *AuthMetadata) (*LoginResult, error)
 
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, updateProfileInpute *UpdateProfileInput) error

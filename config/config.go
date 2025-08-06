@@ -16,6 +16,7 @@ type Config struct {
 	MongodbName string
 	JwtSecret   string
 	ServerPort  string
+	BackendURL string 
 }
 
 func LoadEnv() (*Config, error) {
@@ -26,6 +27,7 @@ func LoadEnv() (*Config, error) {
 		MongodbName: os.Getenv("MONGODB_NAME"),
 		JwtSecret:   os.Getenv("JWT_SECRET"),
 		ServerPort:  os.Getenv("SERVER_PORT"),
+		BackendURL: os.Getenv("BACKEND_BASE_URL"),
 	}
 
 	var missing []string

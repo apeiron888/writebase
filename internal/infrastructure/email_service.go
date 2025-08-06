@@ -3,7 +3,7 @@ package infrastructure
 import (
 	"fmt"
 	"net/smtp"
-	"os"
+	// "os"
 )
 
 // MailtrapService implements IEmailService using Mailtrap's SMTP
@@ -27,17 +27,17 @@ func NewMailtrapService(host, port, username, password, from string) *MailtrapSe
 }
 
 // SendVerificationEmail sends a registration verification code/link
-func (m *MailtrapService) SendVerificationEmail(email, code string) error {
+func (m *MailtrapService) SendVerificationEmail(email, code, baseUrl string) error {
 	subject := "Verify Your Account"
-	frontendURL := os.Getenv("FRONTEND_BASE_URL")
-	body := fmt.Sprintf("Click this link to verify your account:\n\n%s/verify?code=%s",frontendURL, code)
+	
+	body := fmt.Sprintf("Click this link to verify your account:\n\n%s/auth/verify?code=%s",baseUrl, code)
 	return m.sendEmail(email, subject, body)
 }
 
 // SendPasswordReset sends a reset password link/token
-func (m *MailtrapService) SendPasswordReset(email, token string) error {
+func (m *MailtrapService) SendPasswordReset(email, token, baseUrl string) error {
 	subject := "Reset Your Password"
-	body := fmt.Sprintf("Click this link to reset your password:\n\nhttp://localhost:3000/reset-password?token=%s", token)
+	body := fmt.Sprintf("Click this link to reset your password:\n\n%s/auth/reset-password?token=%s",baseUrl, token)
 	return m.sendEmail(email, subject, body)
 }
 
@@ -63,3 +63,21 @@ func (m *MailtrapService) sendEmail(to, subject, body string) error {
 // 	"your_mailtrap_password",
 // 	"noreply@example.com",      // from
 // )
+
+
+type EmailService struct {
+    mailtrap *MailtrapService
+	baseUrl string
+}
+
+func NewEmailService(mailtrap *MailtrapService, url string) *EmailService {
+    return &EmailService{mailtrap: mailtrap}
+}
+
+func (e *EmailService) SendVerificationEmail(email, code string) error {
+    return e.mailtrap.SendVerificationEmail(email, code, e.baseUrl)
+}
+
+func (e *EmailService) SendPasswordReset(email, token string) error {
+    return e.mailtrap.SendPasswordReset(email, token, e.baseUrl)
+}

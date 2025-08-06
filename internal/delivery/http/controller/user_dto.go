@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"time"
-	"write_base/internal/domain"
+    "time"
+    "write_base/internal/domain"
 )
 
 // --- Auth DTOs ---
@@ -43,6 +43,15 @@ type LoginResponse struct {
     ExpiresAt    time.Time `json:"expires_at"` // access token expiration
 }
 
+// Convert domain.LoginResult to LoginResponse
+func ToLoginResponse(result *domain.LoginResult) *LoginResponse {
+    return &LoginResponse{
+        AccessToken:  result.AccessToken,
+        RefreshToken: result.RefreshToken,
+        ExpiresAt:    result.ExpiresAt,
+    }
+}
+
 // logout request need refresh token
 type LogoutRequest struct {
     RefreshToken string `json:"refresh_token" binding:"required"`
@@ -58,7 +67,13 @@ type RefreshTokenResponse struct {
     AccessToken string    `json:"access_token"`
     ExpiresAt   time.Time `json:"expires_at"` // new access token expiration
 }
-
+func ToRefreshTokenResponse(loginResult *domain.LoginResult)*RefreshTokenResponse{
+    return &RefreshTokenResponse{
+        AccessToken: loginResult.AccessToken,
+        ExpiresAt: loginResult.ExpiresAt,
+        
+    }
+}
 // ForgotPasswordRequest for sending password reset email
 type ForgotPasswordRequest struct {
     Email string `json:"email" binding:"required,email"`

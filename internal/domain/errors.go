@@ -44,6 +44,8 @@ var (
 
 	ErrEmailAlreadyExists          = Error{Code: "USER_009", Message: "Email already exists"}
 	ErrUsernameAlreadyExists       = Error{Code: "USER_010", Message: "Username already exists"}
+	ErrEmailNotRegistered          = Error{Code: "USER_016", Message: "This email is not registered"}
+	ErrMissingVerifyCode           = Error{Code: "USER_015", Message: "Missing verification code"}
 	ErrUserNotVerified             = Error{Code: "USER_013", Message: "User email is not verified"}
 	ErrUserDeactivated             = Error{Code: "USER_014", Message: "User account is deactivated"}
 	ErrInvalidToken                = Error{Code: "USER_011", Message: "Invalid or malformed token"}
@@ -51,6 +53,15 @@ var (
 	ErrJWTExpired                  = Error{Code: "TOKEN_002", Message: "JWT has expired"}
 	ErrUnexpectedSigningMethod     = Error{Code: "TOKEN_001", Message: "Unexpected signing method"}
 	ErrAuthorizationHeaderRequired = Error{Code: "AUTH_001", Message: "Authorization header is required"}
+	ErrMissingOrExpiredStateCookie = Error{Code: "AUTH_002", Message: "Missing or expired state cookie"}
+	ErrMissingState                = Error{Code: "AUTH_003", Message: "Missing state parameter in OAuth callback"}
+	ErrMissingOAuthStateToken      = Error{Code: "AUTH_004", Message: "Missing oauthStateToken parameter in OAuth callback"}
+	ErrOAuthLoginFailed            = Error{Code: "AUTH_005", Message: "OAuth login failed"}
+	ErrFailedToFetchUserInfo       = Error{Code: "AUTH_006", Message: "Failed to fetch user info from OAuth provider"}
+	ErrTokenExchangeFailed         = Error{Code: "AUTH_007", Message: "Token exchange failed during OAuth process"}
+	ErrMissingOAuthCode            = Error{Code: "AUTH_008", Message: "Missing code parameter in OAuth callback"}
+	ErrRefreshTokenExpired         = Error{Code: "AUTH_009", Message: "Refresh token has expired"}
+	ErrRefreshTokenRevoked         = Error{Code: "AUTH_010", Message: "Refresh token has been revoked"}
 )
 
 // ===========================================================================//
