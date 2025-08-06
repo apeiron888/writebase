@@ -1,9 +1,11 @@
 package router
 
 import (
-    "github.com/gin-gonic/gin"
-    "write_base/internal/delivery/http/controller"
+	"write_base/internal/delivery/http/controller"
+
+	"github.com/gin-gonic/gin"
 )
+
 // Comment Routes
 func RegisterCommentRoutes(r *gin.Engine, commentController *controller.CommentController) {
     comments := r.Group("/comments")
@@ -52,3 +54,11 @@ func RegisterReportRoutes(r *gin.Engine, reportController *controller.ReportCont
     }
 }
 
+// AI Routes
+func RegisterAIRoutes(r *gin.Engine, aiController *controller.AIController) {
+    ai := r.Group("/ai")
+    {
+        ai.POST("/suggest", aiController.Suggest)
+        ai.POST("/generate-content", aiController.GenerateContent)
+    }
+}
