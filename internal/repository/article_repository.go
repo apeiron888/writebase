@@ -413,8 +413,8 @@ func (r *ArticleRepository) IncrementClap(ctx context.Context, articleID string)
 // ===========================================================================//
 //	                           Trash Management                               //
 // ===========================================================================//
-func (r *ArticleRepository) EmptyTrash(ctx context.Context) error {
-	_, err := r.Collection.DeleteMany(ctx, bson.M{"status": string(domain.StatusDeleted)})
+func (r *ArticleRepository) EmptyTrash(ctx context.Context, userID string) error {
+	_, err := r.Collection.DeleteMany(ctx, bson.M{"status": string(domain.StatusDeleted), "author_id": userID})
 	return err
 }
 
