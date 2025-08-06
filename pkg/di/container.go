@@ -14,6 +14,7 @@ import (
 	"write_base/internal/delivery/http/router"
 	"write_base/internal/repository"
 	"write_base/internal/usecase"
+	usecaseai "write_base/internal/usecase/ai"
 )
 
 type Container struct {
@@ -45,12 +46,15 @@ commentUsecase := usecase.NewCommentUsecase(commentRepo)
 reactionUsecase := usecase.NewReactionUsecase(reactionRepo)
 followUsecase := usecase.NewFollowUsecase(followRepo)
 reportUsecase := usecase.NewReportUsecase(reportRepo)
+aiGemini := usecaseai.NewGeminiClient(cfg.GeminiAPIKey)
 
 // Controllers
 commentController := controller.NewCommentController(commentUsecase)
 reactionController := controller.NewReactionController(reactionUsecase)
 followController := controller.NewFollowController(followUsecase)
 reportController := controller.NewReportController(reportUsecase)
+aiController := controller.NewAIController(aiGemini)
+
 
 // Router
 r := gin.Default()
@@ -58,6 +62,7 @@ router.RegisterCommentRoutes(r, commentController)
 router.RegisterReactionRoutes(r, reactionController)
 router.RegisterFollowRoutes(r, followController)
 router.RegisterReportRoutes(r, reportController)
+router.RegisterAIRoutes(r, aiController)
 
 return &Container{
 	   Router:     r,
