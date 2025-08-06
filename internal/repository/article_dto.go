@@ -7,7 +7,6 @@ import (
 	"write_base/internal/domain"
 )
 
-
 // =================== Full Article DTO (for full fetch) ===================
 type ArticleDTO struct {
 	ID            string              `bson:"_id"`

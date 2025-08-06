@@ -244,9 +244,6 @@ func (u *ArticleUsecase) GetArticleStats(ctx context.Context, userID, articleID 
 	if !u.Policy.UserExists(userID) {
 		return domain.ArticleStats{}, domain.ErrUnauthorized
 	}
-	if !u.Policy.UserOwnsArticle(userID, domain.Article{ID: articleID}) {
-		return domain.ArticleStats{}, domain.ErrUnauthorizedArticleEdit
-	}
 	article, err := u.ArticleRepo.GetByID(c, articleID)
 	if err != nil {
 		if err == domain.ErrArticleNotFound {
@@ -543,7 +540,7 @@ func (u *ArticleUsecase) EmptyTrash(ctx context.Context, userID string) error {
 	if !u.Policy.UserExists(userID) {
 		return domain.ErrUnauthorized
 	}
-	if err:= u.ArticleRepo.EmptyTrash(c); err != nil {
+	if err:= u.ArticleRepo.EmptyTrash(c,userID); err != nil {
 		if err == domain.ErrArticleNotFound {
 			return domain.ErrArticleNotFound
 		}
@@ -558,6 +555,9 @@ func (u *ArticleUsecase) EmptyTrash(ctx context.Context, userID string) error {
 func (u *ArticleUsecase) AdminListAllArticles(ctx context.Context, userID, userRole string, pag domain.Pagination) ([]domain.Article, int, error) {
 	c, close := context.WithTimeout(ctx, domain.DefaultTimeout)
 	defer close()
+	if !u.Policy.UserExists(userID) {
+		return nil, 0, domain.ErrUnauthorized
+	}
 	if !u.Policy.IsAdmin(userID, userRole) {
 		return nil, 0, domain.ErrUnauthorized
 	}
@@ -600,6 +600,12 @@ func (u *ArticleUsecase) AdminUnpublishArticle(ctx context.Context, userID, user
 	if err != nil {
 		if err == domain.ErrArticleNotFound {
 			return nil, domain.ErrArticleNotFound
+		}
+		return nil, domain.ErrInternalServer
+	}
+	if err := u.ArticleRepo.Unpublish(c, articleID); err != nil {
+		if err == domain.ErrArticleNotPublished {
+			return nil, domain.ErrArticleNotPublished
 		}
 		return nil, domain.ErrInternalServer
 	}

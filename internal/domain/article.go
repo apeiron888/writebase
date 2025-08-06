@@ -227,7 +227,7 @@ type IArticleRepository interface {
 	IncrementClap(ctx context.Context, articleID string) error
 
 	// Trash
-	EmptyTrash(ctx context.Context) error
+	EmptyTrash(ctx context.Context,userID string) error
 
 	// Admin
 	AdminListAllArticles(ctx context.Context, pag Pagination) ([]Article, int, error)
