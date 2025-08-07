@@ -13,8 +13,11 @@ import (
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
 	"write_base/internal/repository"
-	"write_base/internal/usecase"
 	usecaseai "write_base/internal/usecase/ai"
+	usecasecomment "write_base/internal/usecase/comment"
+	usecasefollow "write_base/internal/usecase/follow"
+	usecasereaction "write_base/internal/usecase/reaction"
+	usecasereport "write_base/internal/usecase/report"
 )
 
 type Container struct {
@@ -42,10 +45,10 @@ followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
 reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
 
 // Usecases
-commentUsecase := usecase.NewCommentUsecase(commentRepo)
-reactionUsecase := usecase.NewReactionUsecase(reactionRepo)
-followUsecase := usecase.NewFollowUsecase(followRepo)
-reportUsecase := usecase.NewReportUsecase(reportRepo)
+commentUsecase := usecasecomment.NewCommentUsecase(commentRepo)
+reactionUsecase := usecasereaction.NewReactionService(reactionRepo)
+followUsecase := usecasefollow.NewFollowService(followRepo)
+reportUsecase := usecasereport.NewReportService(reportRepo)
 aiGemini := usecaseai.NewGeminiClient(cfg.GeminiAPIKey)
 
 // Controllers
