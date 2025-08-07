@@ -54,6 +54,22 @@ func (uc *UserController) Verify(c *gin.Context){
 	c.IndentedJSON(http.StatusOK, gin.H{"message":"Account is verified"})
 
 }
+func (uc *UserController) VerifyUpdateEmail(c *gin.Context){
+	ctx := c.Request.Context()
+	code := c.Query("code")
+	if code == ""{
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": domain.ErrMissingVerifyCode.Error()})
+		return
+	}
+	err := uc.userUsercase.VerifyUpdateEmail(ctx, code)
+	if err != nil{
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		return 
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message":"New account is succffuly updated"})
+
+}	
+
 
 func (uc *UserController) Login(c *gin.Context){
 	ctx := c.Request.Context()
@@ -216,21 +232,147 @@ func (uc *UserController) ResetPassword(c *gin.Context){
 /////.......... authenticated user.........//
 
 func (uc *UserController) MyProfile(c *gin.Context){
+	ctx:= c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
+		return
+	}
+	user, err := uc.userUsercase.GetProfile(ctx, userId.(string))
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"Profile":ToUserResponse(user)})
 	
 }
 func (uc *UserController) UpdateMyProfile(c *gin.Context){
+	ctx:= c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
+		return
+	}
+	var req UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil{
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+		return 
+	}
+	updateInfo := &domain.UpdateProfileInput{
+		UserID: userId.(string),
+	}
+	if req.Bio != nil {
+		updateInfo.Bio = *req.Bio
+	}
+	if req.ProfileImage != nil {
+		updateInfo.ProfileImage = *req.ProfileImage
+	}
+		
+	err:= uc.userUsercase.UpdateProfile(ctx, updateInfo)
+	if err!= nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message":err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusAccepted, gin.H{"message":"updated Profile"})
 	
 }
 func (uc *UserController) ChangeMyPassword(c *gin.Context){
-	
-}
+	ctx:= c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
+		return
+	}
+	var req ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil{
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+		return 
+	}
+	err := uc.userUsercase.ChangePassword(ctx, userId.(string), req.OldPassword, req.NewPassword)
+	if err != nil{
+		 switch err {
+        case domain.ErrUserNotFound:
+            c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+        case domain.ErrInvalidCredentials:
+            c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+        case domain.ErrWeakPassword:
+            c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+        case domain.ErrPasswordHashingFailed, domain.ErrUserUpdateFailed:
+            c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+        default:
+            c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
+        }
+        return
+    }
+    c.IndentedJSON(http.StatusOK, gin.H{"message": "Password changed successfully"})
+		
+	}
+func (uc *UserController)UpdateMyAccount(c *gin.Context){
+	ctx:= c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
+		return
+	}
+	var req UpdateAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil{
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+		return 
+	}
+	updateInfo := &domain.UpdateAccountInput{
+		UserID: userId.(string),
+	}
+	if req.Username != nil {
+		updateInfo.Username = *req.Username
+	}
+	if req.Email != nil {
+		updateInfo.Email = *req.Email
+	}
+	if req.Email == nil && req.Username == nil {
+    // Neither was sent
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "No fields to update"})
+		return
+	}
+		
+	err:= uc.userUsercase.UpdateAccount(ctx, updateInfo)
+	if err!= nil{
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message":err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusAccepted, gin.H{"message":"updated Account"})
+
+}	
 
 ////////////............Admin........////////////
 func (uc *UserController) DemoteToUser(c *gin.Context){
-
+ ctx := c.Request.Context()
+    var req PromoteDemoteUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+        return
+    }
+    err := uc.userUsercase.DemoteToUser(ctx, req.UserID)
+    if err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+        return
+    }
+    c.IndentedJSON(http.StatusOK, gin.H{"message": "User demoted to user"})
 	
 }
 func (uc *UserController) PromoteToAdmin(c *gin.Context){
+	ctx := c.Request.Context()
+    var req PromoteDemoteUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+        return
+    }
+    err := uc.userUsercase.PromoteToAdmin(ctx, req.UserID)
+    if err != nil {
+        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+        return
+    }
+    c.IndentedJSON(http.StatusOK, gin.H{"message": "User promoted to admin"})
+
 	
 }
 func (uc *UserController) DisabelUser(c *gin.Context){

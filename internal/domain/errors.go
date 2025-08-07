@@ -58,6 +58,7 @@ var (
 	ErrUserDeactivated             = Error{Code: "USER_014", Message: "User account is deactivated"}
 	ErrInvalidToken                = Error{Code: "USER_011", Message: "Invalid or malformed token"}
 	ErrExpiredToken                = Error{Code: "USER_012", Message: "Token has expired"}
+    ErrUserIDNotFound = Error{Code: "USER_024", Message: "User ID not found in context"}
 	ErrJWTExpired                  = Error{Code: "TOKEN_002", Message: "JWT has expired"}
 	ErrUnexpectedSigningMethod     = Error{Code: "TOKEN_001", Message: "Unexpected signing method"}
 	ErrAuthorizationHeaderRequired = Error{Code: "AUTH_001", Message: "Authorization header is required"}
@@ -71,6 +72,8 @@ var (
 	ErrRefreshTokenExpired         = Error{Code: "AUTH_009", Message: "Refresh token has expired"}
 	ErrRefreshTokenRevoked         = Error{Code: "AUTH_010", Message: "Refresh token has been revoked"}
 	ErrRefreshTokenNotFound        = Error{Code: "AUTH_011", Message: "Refresh token not found"}
+	ErrSuperAdminCannotBeDemoted = Error{Code:"AUTH_012", Message:"Super admin cannot be demoted"}
+	ErrSuperAdminCannotBePromoted = Error{Code:"AUTH_013", Message:"Super admin cannot be promoted"}
 )
 
 // ===========================================================================//

@@ -38,17 +38,19 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	//.............
 	userRepository := repository.NewUserRepository(db)
 
-	// Usecases
-	//.........
-	userUsecase:= usecase.NewUserUsecase()
-
+	
 	// Auth service
 	//............
 	mailtrapService := infrastructure.NewMailtrapService(cfg.MailtrapHost, cfg.MailtrapPort, cfg.MailtrapUsername, cfg.MailtrapPassword, cfg.MailtrapFrom)
+	passwordService := infrastructure.NewPasswordService()
 	emailService :=infrastructure.NewEmailService(mailtrapService, cfg.BackendURL)
 	tokenService := infrastructure.NewJWTService([]byte(cfg.JwtSecret))
 	authMiddleware := infrastructure.NewMiddleware(tokenService)
-
+	
+	// Usecases
+	//.........
+	userUsecase:= usecase.NewUserUsecase(userRepository, passwordService, tokenService, emailService)
+	
 	// Handlers
 	//.........
 	userController := controller.NewUserController(userUsecase)

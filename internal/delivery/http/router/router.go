@@ -13,6 +13,7 @@ func UserRouter(r *gin.Engine, userController *controller.UserController, authMi
 	{
 		auth.POST("/register",userController.Register)
 		auth.GET("/verify", userController.Verify)
+		auth.GET("/verify-Update-Email", userController.VerifyUpdateEmail)
 		auth.POST("/login", userController.Login)
 		auth.GET("/google/login", userController.GoogleLogin)
 		auth.GET("/google/Callback", userController.GoogleCallback)
@@ -26,6 +27,7 @@ func UserRouter(r *gin.Engine, userController *controller.UserController, authMi
 	{
 		user.GET("/me", userController.MyProfile)
 		user.PATCH("/me", userController.UpdateMyProfile)
+		user.PATCH("/account", userController.UpdateMyAccount)
 		user.PUT("/password",userController.ChangeMyPassword)
 		
 	}

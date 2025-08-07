@@ -93,7 +93,32 @@ func (uu *UserUsercase) VerifyEmail(ctx context.Context, emailToken string) erro
 	if err != nil{
 		return domain.ErrUserUpdateFailed
 	}
-	return err
+	return nil
+}
+func (uu *UserUsercase)VerifyUpdateEmail(ctx context.Context, emailToken string) error{
+	verification, err := uu.userRepo.GetVerificationToken(ctx, emailToken)
+	if err != nil {
+		return domain.ErrInvalidToken
+	}
+	if time.Now().After(verification.ExpiresAt) {
+		return domain.ErrExpiredToken
+	}
+
+	user, err := uu.userRepo.GetByID(ctx, verification.UserID)
+	if err != nil {
+		return domain.ErrUserNotFound
+	}
+
+	user.Verified = true
+	user.Email = verification.Email
+	user.UpdatedAt = time.Now()
+
+	err = uu.userRepo.UpdateUser(ctx, user)
+	if err != nil{
+		return domain.ErrUserUpdateFailed
+	}
+	return nil
+
 }
 
 func (uu *UserUsercase) Login(ctx context.Context, req *domain.LoginInput, metadata *domain.AuthMetadata) (*domain.LoginResult, error) {
@@ -149,6 +174,13 @@ func (uu *UserUsercase) Login(ctx context.Context, req *domain.LoginInput, metad
 	}
 
 	return loginResult, nil
+}
+func (uu *UserUsercase) Logout(ctx context.Context, refreshToken string) error {
+    err := uu.userRepo.RevokeToken(ctx, refreshToken)
+    if err != nil {
+        return domain.ErrRefreshTokenNotFound 
+    }
+    return nil
 }
 
 func (uu *UserUsercase) LoginOrRegisterOAuthUser(ctx context.Context, registerInput *domain.RegisterInput, metadata *domain.AuthMetadata) (*domain.LoginResult, error) {
@@ -281,11 +313,119 @@ func(uu *UserUsercase) ResetPassword(ctx context.Context, resetToken, newPasswor
 	return nil
 }
 
-func(uu *UserUsercase) GetProfile(ctx context.Context, userID string) (*domain.User, error)
+func(uu *UserUsercase) GetProfile(ctx context.Context, userID string) (*domain.User, error){
+	user, err:= uu.userRepo.GetByID(ctx, userID)
+	if err != nil{
+		return nil, domain.ErrUserNotFound
+	}
+	return user, nil
+}
 
-func(uu *UserUsercase) UpdateProfile(ctx context.Context, updateProfileInpute *domain.UpdateProfileInput) error
+func(uu *UserUsercase) UpdateProfile(ctx context.Context, updateProfileInput *domain.UpdateProfileInput) error{
+	user, err := uu.userRepo.GetByID(ctx, updateProfileInput.UserID)
+    if err != nil {
+        return domain.ErrUserNotFound
+    }
+	user.Bio = updateProfileInput.Bio
+	user.ProfileImage = updateProfileInput.ProfileImage
+	user.UpdatedAt = time.Now()
+	  err = uu.userRepo.UpdateUser(ctx, user)
+    if err != nil {
+        return domain.ErrUserUpdateFailed
+    }
+    return nil
+}
 
-func(uu *UserUsercase) UpdateAccount(ctx context.Context, updateAccoutInput *domain.UpdateAccountInput) error
 
-func(uu *UserUsercase)ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
+func(uu *UserUsercase)ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error{
+	user, err := uu.userRepo.GetByID(ctx, userID)
+    if err != nil {
+		return domain.ErrUserNotFound
+    }
+    if !uu.passwordService.VerifyPassword(user.Password, oldPassword) {
+		return domain.ErrInvalidCredentials
+    }
+    if !uu.passwordService.IsPasswordStrong(newPassword) {
+		return domain.ErrWeakPassword
+    }
+    hashedPassword, err := uu.passwordService.HashPassword(newPassword)
+    if err != nil {
+		return domain.ErrPasswordHashingFailed
+    }
+    user.Password = hashedPassword
+    user.UpdatedAt = time.Now()
+    err = uu.userRepo.UpdateUser(ctx, user)
+    if err != nil {
+		return domain.ErrUserUpdateFailed
+    }
+    return nil
+}
+func(uu *UserUsercase) UpdateAccount(ctx context.Context, updateAccoutInput *domain.UpdateAccountInput) error{
+	// user, err := uu.userRepo.GetByID(ctx, updateAccoutInput.UserID)
+	// if err != nil {
+	// 	return domain.ErrUserNotFound
+	// }
+	// if updateAccoutInput.Username != "" && {
 
+	// }
+	// token := uuid.New().String()
+	// verificationToken := &domain.EmailVerificationToken{
+	// 	ID:        uuid.New().String(),
+	// 	UserID:    user.ID,
+	// 	Email:     updateAccoutInput.Email,
+	// 	Token:     token,
+	// 	ExpiresAt: time.Now().Add(5 * time.Minute), 
+	// 	CreatedAt: time.Now(),
+	// }
+	// err = uu.userRepo.SaveVerificationToken(ctx, verificationToken)
+	// if err != nil {
+	// 	return domain.ErrVerificationTokenSaveFailed
+	// }
+	// err = uu.emailService.SendUpdateVerificationEmail(updateAccoutInput.Email, token)
+	// if err != nil {
+	// 	return domain.ErrSendVerificationEmailFailed
+	// }
+	return nil
+}
+
+//////============Admin usecases ============
+
+ func(uu *UserUsercase) DemoteToUser(ctx context.Context, UserID string) error{
+	   user, err := uu.userRepo.GetByID(ctx, UserID)
+    if err != nil {
+        return domain.ErrUserNotFound
+    }
+    if user.Role == domain.RoleUser  {
+        return nil 
+    }
+	if user.Role == domain.RoleSuperAdmin{
+		return domain.ErrSuperAdminCannotBeDemoted
+	}
+    user.Role = domain.RoleUser
+    user.UpdatedAt = time.Now()
+    err = uu.userRepo.UpdateUser(ctx, user)
+    if err != nil {
+        return domain.ErrUserUpdateFailed
+    }
+    return nil
+
+ }
+ func(uu *UserUsercase) PromoteToAdmin(ctx context.Context, UserID string) error{
+    user, err := uu.userRepo.GetByID(ctx, UserID)
+    if err != nil {
+        return domain.ErrUserNotFound
+    }
+    if user.Role == domain.RoleAdmin {
+        return nil 
+    }
+	if user.Role == domain.RoleSuperAdmin{
+		return domain.ErrSuperAdminCannotBePromoted
+	}
+    user.Role = domain.RoleAdmin
+    user.UpdatedAt = time.Now()
+    err = uu.userRepo.UpdateUser(ctx, user)
+    if err != nil {
+        return domain.ErrUserUpdateFailed
+    }
+    return nil
+ }

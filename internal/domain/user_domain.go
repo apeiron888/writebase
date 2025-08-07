@@ -82,11 +82,13 @@ type ITokenService interface {
 type IEmailService interface {
     SendPasswordReset(email, token string) error
     SendVerificationEmail(email, code string) error
+    SendUpdateVerificationEmail(email, code string) error
 }
 
 type IUserUsecase interface {
 	Register(ctx context.Context, registerInput *RegisterInput) error
     VerifyEmail(ctx context.Context, token string) error
+    VerifyUpdateEmail(ctx context.Context, token string) error
 	Login(ctx context.Context, loginInput *LoginInput, metadata *AuthMetadata) (*LoginResult, error)
 	Logout(ctx context.Context, refreshToken string) error
 	RefreshToken(ctx context.Context, refreshToken string) (*LoginResult, error)
@@ -98,6 +100,9 @@ type IUserUsecase interface {
 	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
     ForgotPassword(ctx context.Context, email string) error
     ResetPassword(ctx context.Context, resetToken, newPassword string) error
+
+    DemoteToUser(ctx context.Context, UserID string) error
+    PromoteToAdmin(ctx context.Context, UserID string) error
 }
 
 type LoginResult struct {
@@ -137,6 +142,7 @@ type UpdateAccountInput struct {
 type EmailVerificationToken struct {
     ID        string
     UserID    string
+    Email     string
     Token     string
     ExpiresAt time.Time
     CreatedAt time.Time

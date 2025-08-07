@@ -88,7 +88,7 @@ type ResetPasswordRequest struct {
 // ChangePasswordRequest for changing password after login
 type ChangePasswordRequest struct {
     OldPassword string `json:"old_password" binding:"required"`
-    NewPassword string `json:"new_password" binding:"required,min=6"`
+    NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
 // --- User Profile DTOs ---
@@ -103,19 +103,34 @@ type UserResponse struct {
     Role         string    `json:"role"`
     CreatedAt    time.Time `json:"created_at"`
 }
+func ToUserResponse(user *domain.User) *UserResponse {
+    if user == nil {
+        return nil
+    }
+    return &UserResponse{
+        ID:           user.ID,
+        Username:     user.Username,
+        Email:        user.Email,
+        Bio:          user.Bio,
+        ProfileImage: user.ProfileImage,
+        Role:         string(user.Role),
+        CreatedAt:    user.CreatedAt,
+    }
+}
 
 // UpdateProfileRequest for updating user profile
 type UpdateProfileRequest struct {
     Bio          *string `json:"bio,omitempty"`
     ProfileImage *string `json:"profile_image,omitempty"`
 }
-
+type UpdateAccountRequest struct {
+    Username *string `json:"username,omitempty"`
+    Email    *string `json:"email,omitempty"`
+}
 // --- Optional Admin DTOs ---
 
 // PromoteDemoteUserRequest - for promote/demote if needed
 type PromoteDemoteUserRequest struct {
-    // optional: reason string `json:"reason,omitempty"`
+    UserID string `json:"user_id"`
 }
 
-
-//--- convert functions
