@@ -94,7 +94,7 @@ type IUserUsecase interface {
 
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, updateProfileInpute *UpdateProfileInput) error
-    UpdateAccount(ctx context.Context, updateAccoutInput *UpdateAccountInput)
+    UpdateAccount(ctx context.Context, updateAccoutInput *UpdateAccountInput) error
 	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
     ForgotPassword(ctx context.Context, email string) error
     ResetPassword(ctx context.Context, resetToken, newPassword string) error

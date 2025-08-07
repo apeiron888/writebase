@@ -36,26 +36,21 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 
 	// Repositories
 	//.............
-	articleRepo := repository.NewArticleRepository(db, "articles")
-	clapRepo := repository.NewArticleClapRepository(db, "article_claps")
-	viewRepo := repository.NewArticleViewRepository(db, "article_views")
+	userRepository := repository.NewUserRepository(db)
 
 	// Usecases
 	//.........
-	clapUsecase := usecase.NewClapUsecase(clapRepo)
-	viewUsecase := usecase.NewViewUsecase(viewRepo)
-	articleUsecase := usecase.NewArticleUsecase(articleRepo, clapUsecase, viewUsecase)
 	userUsecase:= usecase.NewUserUsecase()
 
 	// Auth service
 	//............
+	mailtrapService := infrastructure.NewMailtrapService(cfg.MailtrapHost, cfg.MailtrapPort, cfg.MailtrapUsername, cfg.MailtrapPassword, cfg.MailtrapFrom)
 	emailService :=infrastructure.NewEmailService(mailtrapService, cfg.BackendURL)
 	tokenService := infrastructure.NewJWTService([]byte(cfg.JwtSecret))
 	authMiddleware := infrastructure.NewMiddleware(tokenService)
 
 	// Handlers
 	//.........
-	articleHandler := controller.NewArticleHandler(articleUsecase)
 	userController := controller.NewUserController(userUsecase)
 
 	// Router
@@ -66,7 +61,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	router.UserRouter(r, userController, authMiddleware)
 
 	return &Container{
-		Router:     router,
+		Router:     r,
 		MongoClient: client,
 	}, nil
 }

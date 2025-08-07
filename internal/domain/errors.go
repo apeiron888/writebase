@@ -42,6 +42,14 @@ var (
 
 	ErrWeakPassword = Error{Code: "USER_008", Message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"}
 
+	ErrPasswordHashingFailed        = Error{Code: "USER_017", Message: "Failed to hash password"}
+	ErrUserCreationFailed           = Error{Code: "USER_018", Message: "Failed to create user"}
+	ErrUserUpdateFailed             = Error{Code: "USER_021", Message: "Failed to update user"}
+	ErrAccessTokenGenerationFailed  = Error{Code: "USER_022", Message: "Failed to generate access token"}
+	ErrRefreshTokenGenerationFailed = Error{Code: "USER_023", Message: "Failed to generate refresh token"}
+	ErrVerificationTokenSaveFailed  = Error{Code: "USER_019", Message: "Failed to save verification token"}
+	ErrSendVerificationEmailFailed  = Error{Code: "USER_020", Message: "Failed to send verification email"}
+
 	ErrEmailAlreadyExists          = Error{Code: "USER_009", Message: "Email already exists"}
 	ErrUsernameAlreadyExists       = Error{Code: "USER_010", Message: "Username already exists"}
 	ErrEmailNotRegistered          = Error{Code: "USER_016", Message: "This email is not registered"}
@@ -62,6 +70,7 @@ var (
 	ErrMissingOAuthCode            = Error{Code: "AUTH_008", Message: "Missing code parameter in OAuth callback"}
 	ErrRefreshTokenExpired         = Error{Code: "AUTH_009", Message: "Refresh token has expired"}
 	ErrRefreshTokenRevoked         = Error{Code: "AUTH_010", Message: "Refresh token has been revoked"}
+	ErrRefreshTokenNotFound        = Error{Code: "AUTH_011", Message: "Refresh token not found"}
 )
 
 // ===========================================================================//
