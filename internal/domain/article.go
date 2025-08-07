@@ -159,7 +159,7 @@ type IArticleUsecase interface {
 	RestoreArticle(ctx context.Context, userID, articleID string) (*Article, error)
 
 	// Statistics
-	GetArticleStats(ctx context.Context, userID, articleID string) (ArticleStats, error)
+	GetArticleStats(ctx context.Context, articleID string) (ArticleStats, error)
 
 	// State transitions
 	PublishArticle(ctx context.Context, userID, articleID string) (*Article, error)

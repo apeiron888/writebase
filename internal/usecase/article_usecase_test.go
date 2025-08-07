@@ -229,7 +229,6 @@ func TestArticleUsecase_RestoreArticle(t *testing.T) {
 func TestArticleUsecase_GetArticleStats(t *testing.T) {
     type testCase struct {
         name      string
-        userID    string
         articleID string
         setup     func(*mocks.MockIArticleRepository, *mocks.MockIArticlePolicy)
         expectErr error
@@ -238,10 +237,8 @@ func TestArticleUsecase_GetArticleStats(t *testing.T) {
     tests := []testCase{
         {
             name:      "success",
-            userID:    "user1",
             articleID: "article1",
             setup: func(repo *mocks.MockIArticleRepository, policy *mocks.MockIArticlePolicy) {
-                policy.On("UserExists", "user1").Return(true)
                 repo.On("GetByID", mock.Anything, "article1").Return(&domain.Article{ID: "article1", 
                 Stats: domain.ArticleStats{ViewCount: 100, ClapCount: 50}}, nil)
             },
@@ -258,7 +255,7 @@ func TestArticleUsecase_GetArticleStats(t *testing.T) {
             }
             uc := usecase.NewArticleUsecase(repo, policy)
 
-            stats, err := uc.GetArticleStats(context.Background(), tc.userID, tc.articleID)
+            stats, err := uc.GetArticleStats(context.Background(), tc.articleID)
             if err != tc.expectErr {
                 t.Errorf("expected error %v, got %v", tc.expectErr, err)
             }
