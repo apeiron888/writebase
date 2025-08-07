@@ -63,6 +63,9 @@ type IUserRepository interface {
     RevokeAllByUser(ctx context.Context, userID string) error
     SaveVerificationToken(ctx context.Context,emailToken *EmailVerificationToken) error
     GetVerificationToken(ctx context.Context, emailToken string) (*EmailVerificationToken, error)
+    //clean up
+    DeleteUnverifiedExpiredUsers(ctx context.Context, expiration time.Duration)error
+    DeleteOldRevokedTokens(ctx context.Context, olderThan time.Duration)error
 }
 
 type IPasswordService interface {

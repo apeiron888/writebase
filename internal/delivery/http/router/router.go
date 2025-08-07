@@ -16,11 +16,11 @@ func UserRouter(r *gin.Engine, userController *controller.UserController, authMi
 		auth.GET("/verify-Update-Email", userController.VerifyUpdateEmail)
 		auth.POST("/login", userController.Login)
 		auth.GET("/google/login", userController.GoogleLogin)
-		auth.GET("/google/Callback", userController.GoogleCallback)
+		auth.GET("/google/callback", userController.GoogleCallback)
 		auth.POST("/forget-password", userController.ForgetPassword)
 		auth.POST("/reset-password", userController.ResetPassword)
 		auth.POST("/logout", authMiddleware.Authmiddleware(), userController.Logout)
-		auth.POST("/refresh",authMiddleware.Authmiddleware(),userController.RefreshToken)
+		auth.POST("/refresh",userController.RefreshToken)
 	}
 	user := r.Group("/users")
 	user.Use(authMiddleware.Authmiddleware())

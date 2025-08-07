@@ -2,12 +2,14 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"time"
 	"write_base/internal/domain"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserRepository struct{
@@ -15,9 +17,50 @@ type UserRepository struct{
 	RefreshTokenCollection *mongo.Collection
 	EmailTokenCollection *mongo.Collection
 }
-func NewUserRepository(db *mongo.Database)domain.IUserRepository{
-	return &UserRepository{UserCollection: db.Collection("users"), RefreshTokenCollection:db.Collection("RefreshToken"),EmailTokenCollection: db.Collection("EamilToken"),
+func NewUserRepository(db *mongo.Database) domain.IUserRepository {
+    refreshTokenCol := db.Collection("RefreshToken")
+    emailTokenCol := db.Collection("EmailToken")
+
+    ctx := context.Background()
+    // TTL index for refresh tokens
+    _, err := refreshTokenCol.Indexes().CreateOne(ctx, mongo.IndexModel{
+        Keys: bson.D{{Key: "expires_at", Value: 1}},
+        Options: options.Index().SetExpireAfterSeconds(0),
+    })
+    if err != nil {
+        fmt.Println("Failed to create TTL index for RefreshToken:", err)
+    }
+
+    // TTL index for email tokens
+    _, err = emailTokenCol.Indexes().CreateOne(ctx, mongo.IndexModel{
+        Keys: bson.D{{Key: "expires_at", Value: 1}},
+        Options: options.Index().SetExpireAfterSeconds(0),
+    })
+    if err != nil {
+        fmt.Println("Failed to create TTL index for EmailToken:", err)
+    }
+
+    return &UserRepository{
+        UserCollection: db.Collection("users"),
+        RefreshTokenCollection: refreshTokenCol,
+        EmailTokenCollection: emailTokenCol,
+    }
 }
+func (r *UserRepository) DeleteUnverifiedExpiredUsers(ctx context.Context, expiration time.Duration) error {
+    threshold := primitive.NewDateTimeFromTime(time.Now().Add(-expiration))
+    _, err := r.UserCollection.DeleteMany(ctx, bson.M{
+        "verified": false,
+        "created_at": bson.M{"$lt": threshold},
+    })
+    return err
+}
+func (r *UserRepository) DeleteOldRevokedTokens(ctx context.Context, olderThan time.Duration) error {
+    threshold := primitive.NewDateTimeFromTime(time.Now().Add(-olderThan))
+    _, err := r.RefreshTokenCollection.DeleteMany(ctx, bson.M{
+        "revoked": true,
+        "revoked_at": bson.M{"$lt": threshold},
+    })
+    return err
 }
 // CreateUser inserts a new user into the users collection.
 func (r *UserRepository) CreateUser(ctx context.Context, user *domain.User) error {
@@ -99,7 +142,6 @@ func (r *UserRepository) StoreToken(ctx context.Context, token *domain.RefreshTo
     return err
 }
 
-// GetByToken finds a refresh token by its token string.
 func (r *UserRepository) GetByToken(ctx context.Context, token string) (*domain.RefreshToken, error) {
     var dto refreshTokenDTO
     err := r.RefreshTokenCollection.FindOne(ctx, bson.M{"token": token}).Decode(&dto)

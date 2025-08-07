@@ -2,23 +2,51 @@ package di
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"github.com/gin-gonic/gin"
 
 	"write_base/config"
-	"write_base/internal/repository"
-	"write_base/internal/usecase"
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
+	"write_base/internal/domain"
 	"write_base/internal/infrastructure"
+	"write_base/internal/repository"
+	"write_base/internal/usecase"
 )
 
 type Container struct {
 	Router *gin.Engine
 	MongoClient *mongo.Client 
+}
+func startCleanupJob(userRepo domain.IUserRepository, interval, expiration time.Duration) {
+    go func() {
+        ticker := time.NewTicker(interval)
+        defer ticker.Stop()
+        for {
+            <-ticker.C
+            ctx := context.Background()
+            if err := userRepo.DeleteUnverifiedExpiredUsers(ctx, expiration); err != nil {
+                fmt.Println("Cleanup job error:", err)
+            }
+        }
+    }()
+}
+func startRevokedTokenCleanupJob(userRepo domain.IUserRepository, interval, olderThan time.Duration) {
+    go func() {
+        ticker := time.NewTicker(interval)
+        defer ticker.Stop()
+        for {
+            <-ticker.C
+            ctx := context.Background()
+            if err := userRepo.DeleteOldRevokedTokens(ctx, olderThan); err != nil {
+                fmt.Println("Revoked token cleanup job error:", err)
+            }
+        }
+    }()
 }
 
 func NewContainer(cfg *config.Config) (*Container, error) {
@@ -37,6 +65,11 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	// Repositories
 	//.............
 	userRepository := repository.NewUserRepository(db)
+	// clean up job
+	startCleanupJob(userRepository, time.Hour, 5*time.Minute)
+	// Clean up old revoked tokens (e.g., tokens revoked more than 24 hours ago)
+    startRevokedTokenCleanupJob(userRepository, time.Hour, 5*time.Minute)
+
 
 	
 	// Auth service

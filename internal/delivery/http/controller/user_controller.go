@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"time"
 	"write_base/config"
@@ -15,67 +16,65 @@ import (
 	"github.com/google/uuid"
 )
 
-
-type UserController struct{
+type UserController struct {
 	userUsercase domain.IUserUsecase
 }
 
-func NewUserController(usecase domain.IUserUsecase) * UserController{
+func NewUserController(usecase domain.IUserUsecase) *UserController {
 	return &UserController{userUsercase: usecase}
 }
 
-func (uc *UserController) Register(c *gin.Context ){
+func (uc *UserController) Register(c *gin.Context) {
 	ctx := c.Request.Context()
 	var user RegisterRequest
-	if err:= c.ShouldBindJSON(&user); err != nil{
+	if err := c.ShouldBindJSON(&user); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	err := uc.userUsercase.Register(ctx, user.ToRegisterInput())
-	if err != nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+	if err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 
 	c.IndentedJSON(http.StatusCreated, gin.H{"message": "successfully registerd"})
 }
-func (uc *UserController) Verify(c *gin.Context){
+func (uc *UserController) Verify(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Query("code")
-	if code == ""{
+	if code == "" {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": domain.ErrMissingVerifyCode.Error()})
 		return
 	}
 	err := uc.userUsercase.VerifyEmail(ctx, code)
-	if err != nil{
+	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-		return 
+		return
 	}
-	c.IndentedJSON(http.StatusOK, gin.H{"message":"Account is verified"})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Account is verified"})
 
 }
-func (uc *UserController) VerifyUpdateEmail(c *gin.Context){
+func (uc *UserController) VerifyUpdateEmail(c *gin.Context) {
 	ctx := c.Request.Context()
 	code := c.Query("code")
-	if code == ""{
+	if code == "" {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": domain.ErrMissingVerifyCode.Error()})
 		return
 	}
 	err := uc.userUsercase.VerifyUpdateEmail(ctx, code)
-	if err != nil{
+	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-		return 
+		return
 	}
-	c.IndentedJSON(http.StatusOK, gin.H{"message":"New account is succffuly updated"})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "New account is succffuly updated"})
 
-}	
+}
 
-
-func (uc *UserController) Login(c *gin.Context){
+func (uc *UserController) Login(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	var user LoginRequest
-	if err:= c.ShouldBindJSON(&user); err != nil{
+	if err := c.ShouldBindJSON(&user); err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
@@ -86,35 +85,35 @@ func (uc *UserController) Login(c *gin.Context){
 	metadata := &domain.AuthMetadata{IP: iP, UserAgent: userAgent, DeviceInfo: deviceInfo}
 
 	jwtToken, err := uc.userUsercase.Login(ctx, user.ToLoginInput(), metadata)
-	if err != nil{
-		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message":err.Error()})
+	if err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, gin.H{"message":"user logged in successfully","token":ToLoginResponse(jwtToken)})
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "user logged in successfully", "token": ToLoginResponse(jwtToken)})
 
 }
 
-////-========================google auth====================================////
+// //-========================google auth====================================////
 func (uc *UserController) GoogleLogin(c *gin.Context) {
 	stateToken := uuid.New().String()
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name: "oauthStateToken",
-		Value: stateToken,
-		Expires: time.Now().Add((10 * time.Minute)),
+		Name:     "oauthStateToken",
+		Value:    stateToken,
+		Expires:  time.Now().Add((10 * time.Minute)),
 		HttpOnly: true,
-		Secure: false, // make it true for https
-		Path: "/auth",
-		
+		Secure:   false, // make it true for https
+		Path:     "/auth",
 	})
-	url := config.GoogleOAuthConfig.AuthCodeURL(stateToken) // 
+	log.Print("CLIENT_ID : ", config.GoogleOAuthConfig.ClientID)
+	url := config.GoogleOAuthConfig.AuthCodeURL(stateToken) //
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (uc *UserController) GoogleCallback(c *gin.Context) {
 	ctx := c.Request.Context()
 	stateFromQurey := c.Query("state")
-	if stateFromQurey == ""{
+	if stateFromQurey == "" {
 		c.IndentedJSON(http.StatusBadRequest, domain.ErrMissingState)
 	}
 	cookie, err := c.Request.Cookie("oauthStateToken")
@@ -122,7 +121,7 @@ func (uc *UserController) GoogleCallback(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, domain.ErrMissingOAuthStateToken)
 	}
 	stateFromcookie := cookie.Value
-	if stateFromQurey != stateFromcookie{
+	if stateFromQurey != stateFromcookie {
 		c.IndentedJSON(http.StatusBadRequest, domain.ErrMissingOrExpiredStateCookie)
 	}
 	code := c.Query("code")
@@ -154,7 +153,7 @@ func (uc *UserController) GoogleCallback(c *gin.Context) {
 	name := data["name"].(string)
 
 	// Pass to Usecase
-	registerOrLogin := &domain.RegisterInput{Username: name, Email:email}
+	registerOrLogin := &domain.RegisterInput{Username: name, Email: email}
 	iP := c.ClientIP()
 	userAgent := c.Request.UserAgent()
 	deviceInfo := c.GetHeader("Device-Info")
@@ -167,18 +166,19 @@ func (uc *UserController) GoogleCallback(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, gin.H{"access_token": ToLoginResponse(jwtToken)})
 }
-/////====================================================================================////
-func (uc *UserController) RefreshToken(c *gin.Context){
+
+// ///====================================================================================////
+func (uc *UserController) RefreshToken(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	loginResult, err := uc.userUsercase.RefreshToken(ctx, req.RefreshToken)
-	if err!= nil{
+	if err != nil {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-        return
+		return
 
 	}
 	c.IndentedJSON(http.StatusOK, gin.H{"token": ToRefreshTokenResponse(loginResult)})
@@ -186,53 +186,53 @@ func (uc *UserController) RefreshToken(c *gin.Context){
 }
 
 func (uc *UserController) Logout(c *gin.Context) {
-    ctx := c.Request.Context()
-    var req LogoutRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-        return
-    }
-    err := uc.userUsercase.Logout(ctx, req.RefreshToken)
-    if err != nil {
-        c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User logged out successfully"})
+	ctx := c.Request.Context()
+	var req LogoutRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	err := uc.userUsercase.Logout(ctx, req.RefreshToken)
+	if err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User logged out successfully"})
 }
-func (uc *UserController) ForgetPassword(c *gin.Context){
+func (uc *UserController) ForgetPassword(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req ForgotPasswordRequest
-	if err:= c.ShouldBindJSON(&req); err != nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	err := uc.userUsercase.ForgotPassword(ctx, req.Email)
-	if err != nil{
+	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "check your email"})
 
-
 }
-func (uc *UserController) ResetPassword(c *gin.Context){
+func (uc *UserController) ResetPassword(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req ResetPasswordRequest
-	if err:= c.ShouldBindJSON(&req); err!= nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
 	err := uc.userUsercase.ResetPassword(ctx, req.Token, req.NewPassword)
-	if err != nil{
-		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message":err.Error()})
+	if err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
 		return
 	}
 	c.IndentedJSON(http.StatusOK, gin.H{"message": "Reset Password successfully"})
 }
+
 /////.......... authenticated user.........//
 
-func (uc *UserController) MyProfile(c *gin.Context){
-	ctx:= c.Request.Context()
+func (uc *UserController) MyProfile(c *gin.Context) {
+	ctx := c.Request.Context()
 	userId, ok := c.Get("user_id")
 	if !ok {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
@@ -243,20 +243,20 @@ func (uc *UserController) MyProfile(c *gin.Context){
 		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	c.IndentedJSON(http.StatusOK, gin.H{"Profile":ToUserResponse(user)})
-	
+	c.IndentedJSON(http.StatusOK, gin.H{"Profile": ToUserResponse(user)})
+
 }
-func (uc *UserController) UpdateMyProfile(c *gin.Context){
-	ctx:= c.Request.Context()
+func (uc *UserController) UpdateMyProfile(c *gin.Context) {
+	ctx := c.Request.Context()
 	userId, ok := c.Get("user_id")
 	if !ok {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
 		return
 	}
 	var req UpdateProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
-		return 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	updateInfo := &domain.UpdateProfileInput{
 		UserID: userId.(string),
@@ -267,57 +267,57 @@ func (uc *UserController) UpdateMyProfile(c *gin.Context){
 	if req.ProfileImage != nil {
 		updateInfo.ProfileImage = *req.ProfileImage
 	}
-		
-	err:= uc.userUsercase.UpdateProfile(ctx, updateInfo)
-	if err!= nil{
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message":err.Error()})
+
+	err := uc.userUsercase.UpdateProfile(ctx, updateInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	c.IndentedJSON(http.StatusAccepted, gin.H{"message":"updated Profile"})
-	
+	c.IndentedJSON(http.StatusAccepted, gin.H{"message": "updated Profile"})
+
 }
-func (uc *UserController) ChangeMyPassword(c *gin.Context){
-	ctx:= c.Request.Context()
+func (uc *UserController) ChangeMyPassword(c *gin.Context) {
+	ctx := c.Request.Context()
 	userId, ok := c.Get("user_id")
 	if !ok {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
 		return
 	}
 	var req ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
-		return 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	err := uc.userUsercase.ChangePassword(ctx, userId.(string), req.OldPassword, req.NewPassword)
-	if err != nil{
-		 switch err {
-        case domain.ErrUserNotFound:
-            c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
-        case domain.ErrInvalidCredentials:
-            c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-        case domain.ErrWeakPassword:
-            c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-        case domain.ErrPasswordHashingFailed, domain.ErrUserUpdateFailed:
-            c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        default:
-            c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
-        }
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "Password changed successfully"})
-		
+	if err != nil {
+		switch err {
+		case domain.ErrUserNotFound:
+			c.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		case domain.ErrInvalidCredentials:
+			c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+		case domain.ErrWeakPassword:
+			c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		case domain.ErrPasswordHashingFailed, domain.ErrUserUpdateFailed:
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		default:
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": "Unknown error"})
+		}
+		return
 	}
-func (uc *UserController)UpdateMyAccount(c *gin.Context){
-	ctx:= c.Request.Context()
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Password changed successfully"})
+
+}
+func (uc *UserController) UpdateMyAccount(c *gin.Context) {
+	ctx := c.Request.Context()
 	userId, ok := c.Get("user_id")
 	if !ok {
 		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
 		return
 	}
 	var req UpdateAccountRequest
-	if err := c.ShouldBindJSON(&req); err != nil{
-		c.IndentedJSON(http.StatusBadRequest, gin.H{"message":err.Error()})
-		return 
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
 	}
 	updateInfo := &domain.UpdateAccountInput{
 		UserID: userId.(string),
@@ -329,55 +329,54 @@ func (uc *UserController)UpdateMyAccount(c *gin.Context){
 		updateInfo.Email = *req.Email
 	}
 	if req.Email == nil && req.Username == nil {
-    // Neither was sent
+		// Neither was sent
 		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "No fields to update"})
 		return
 	}
-		
-	err:= uc.userUsercase.UpdateAccount(ctx, updateInfo)
-	if err!= nil{
-		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message":err.Error()})
+
+	err := uc.userUsercase.UpdateAccount(ctx, updateInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	c.IndentedJSON(http.StatusAccepted, gin.H{"message":"updated Account"})
+	c.IndentedJSON(http.StatusAccepted, gin.H{"message": "updated Account"})
 
-}	
-
-////////////............Admin........////////////
-func (uc *UserController) DemoteToUser(c *gin.Context){
- ctx := c.Request.Context()
-    var req PromoteDemoteUserRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-        return
-    }
-    err := uc.userUsercase.DemoteToUser(ctx, req.UserID)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User demoted to user"})
-	
 }
-func (uc *UserController) PromoteToAdmin(c *gin.Context){
+
+// //////////............Admin........////////////
+func (uc *UserController) DemoteToUser(c *gin.Context) {
 	ctx := c.Request.Context()
-    var req PromoteDemoteUserRequest
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-        return
-    }
-    err := uc.userUsercase.PromoteToAdmin(ctx, req.UserID)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User promoted to admin"})
+	var req PromoteDemoteUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	err := uc.userUsercase.DemoteToUser(ctx, req.UserID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User demoted to user"})
 
-	
 }
-func (uc *UserController) DisabelUser(c *gin.Context){
-	
+func (uc *UserController) PromoteToAdmin(c *gin.Context) {
+	ctx := c.Request.Context()
+	var req PromoteDemoteUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	err := uc.userUsercase.PromoteToAdmin(ctx, req.UserID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User promoted to admin"})
+
 }
-func (uc *UserController) EnableUser(c *gin.Context){
-	
+func (uc *UserController) DisabelUser(c *gin.Context) {
+
+}
+func (uc *UserController) EnableUser(c *gin.Context) {
+
 }
