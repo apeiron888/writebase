@@ -780,8 +780,8 @@ func (_c *MockIArticleUsecase_GetArticleByID_Call) RunAndReturn(run func(ctx con
 }
 
 // GetArticleStats provides a mock function for the type MockIArticleUsecase
-func (_mock *MockIArticleUsecase) GetArticleStats(ctx context.Context, userID string, articleID string) (domain.ArticleStats, error) {
-	ret := _mock.Called(ctx, userID, articleID)
+func (_mock *MockIArticleUsecase) GetArticleStats(ctx context.Context, articleID string) (domain.ArticleStats, error) {
+	ret := _mock.Called(ctx, articleID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetArticleStats")
@@ -789,16 +789,16 @@ func (_mock *MockIArticleUsecase) GetArticleStats(ctx context.Context, userID st
 
 	var r0 domain.ArticleStats
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) (domain.ArticleStats, error)); ok {
-		return returnFunc(ctx, userID, articleID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (domain.ArticleStats, error)); ok {
+		return returnFunc(ctx, articleID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) domain.ArticleStats); ok {
-		r0 = returnFunc(ctx, userID, articleID)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) domain.ArticleStats); ok {
+		r0 = returnFunc(ctx, articleID)
 	} else {
 		r0 = ret.Get(0).(domain.ArticleStats)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
-		r1 = returnFunc(ctx, userID, articleID)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = returnFunc(ctx, articleID)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -812,13 +812,12 @@ type MockIArticleUsecase_GetArticleStats_Call struct {
 
 // GetArticleStats is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID string
 //   - articleID string
-func (_e *MockIArticleUsecase_Expecter) GetArticleStats(ctx interface{}, userID interface{}, articleID interface{}) *MockIArticleUsecase_GetArticleStats_Call {
-	return &MockIArticleUsecase_GetArticleStats_Call{Call: _e.mock.On("GetArticleStats", ctx, userID, articleID)}
+func (_e *MockIArticleUsecase_Expecter) GetArticleStats(ctx interface{}, articleID interface{}) *MockIArticleUsecase_GetArticleStats_Call {
+	return &MockIArticleUsecase_GetArticleStats_Call{Call: _e.mock.On("GetArticleStats", ctx, articleID)}
 }
 
-func (_c *MockIArticleUsecase_GetArticleStats_Call) Run(run func(ctx context.Context, userID string, articleID string)) *MockIArticleUsecase_GetArticleStats_Call {
+func (_c *MockIArticleUsecase_GetArticleStats_Call) Run(run func(ctx context.Context, articleID string)) *MockIArticleUsecase_GetArticleStats_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -828,14 +827,9 @@ func (_c *MockIArticleUsecase_GetArticleStats_Call) Run(run func(ctx context.Con
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
-		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
 		run(
 			arg0,
 			arg1,
-			arg2,
 		)
 	})
 	return _c
@@ -846,7 +840,7 @@ func (_c *MockIArticleUsecase_GetArticleStats_Call) Return(articleStats domain.A
 	return _c
 }
 
-func (_c *MockIArticleUsecase_GetArticleStats_Call) RunAndReturn(run func(ctx context.Context, userID string, articleID string) (domain.ArticleStats, error)) *MockIArticleUsecase_GetArticleStats_Call {
+func (_c *MockIArticleUsecase_GetArticleStats_Call) RunAndReturn(run func(ctx context.Context, articleID string) (domain.ArticleStats, error)) *MockIArticleUsecase_GetArticleStats_Call {
 	_c.Call.Return(run)
 	return _c
 }

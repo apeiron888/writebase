@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 	"write_base/internal/domain"
-
 	"github.com/google/uuid"
 )
 
@@ -238,12 +237,9 @@ func (u *ArticleUsecase) RestoreArticle(ctx context.Context, userID, articleID s
 //===========================================================================//
 //                 Article Statistics (Author only)                           //
 //===========================================================================//
-func (u *ArticleUsecase) GetArticleStats(ctx context.Context, userID, articleID string) (domain.ArticleStats, error) {
+func (u *ArticleUsecase) GetArticleStats(ctx context.Context, articleID string) (domain.ArticleStats, error) {
 	c, close := context.WithTimeout(ctx, domain.DefaultTimeout)
 	defer close()
-	if !u.Policy.UserExists(userID) {
-		return domain.ArticleStats{}, domain.ErrUnauthorized
-	}
 	article, err := u.ArticleRepo.GetByID(c, articleID)
 	if err != nil {
 		if err == domain.ErrArticleNotFound {
