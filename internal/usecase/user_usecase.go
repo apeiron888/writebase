@@ -16,9 +16,9 @@ type UserUsercase struct {
 	emailService    domain.IEmailService
 }
 
-// func NewUserUsecase(repo domain.IUserRepository,pass domain.IPasswordService, tk domain.ITokenService , em domain.IEmailService) domain.IUserUsecase{
-// 	return &UserUsercase{userRepo: repo, passwordService: pass, tokenService: tk, emailService: em}
-// }
+func NewUserUsecase(repo domain.IUserRepository,pass domain.IPasswordService, tk domain.ITokenService , em domain.IEmailService) domain.IUserUsecase{
+	return &UserUsercase{userRepo: repo, passwordService: pass, tokenService: tk, emailService: em}
+}
 
 func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput) error {
 	if _, err := uu.userRepo.GetByEmail(ctx, req.Email); err == nil {
@@ -34,7 +34,7 @@ func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput)
 	}
 	hashedPassword, err := uu.passwordService.HashPassword(req.Password)
 	if err != nil {
-		return err
+		return domain.ErrPasswordHashingFailed
 	}
 	user := &domain.User{
 		ID:        uuid.New().String(),
@@ -49,7 +49,7 @@ func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput)
 	}
 	err = uu.userRepo.CreateUser(ctx, user)
 	if err != nil {
-		return err
+		return domain.ErrUserCreationFailed
 	}
 	// 2. Generate email verification token
 	token := uuid.New().String()
@@ -62,11 +62,11 @@ func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput)
 	}
 	err = uu.userRepo.SaveVerificationToken(ctx, verificationToken)
 	if err != nil {
-		return err
+		return domain.ErrVerificationTokenSaveFailed
 	}
 	err = uu.emailService.SendVerificationEmail(user.Email, token)
 	if err != nil {
-		return err
+		return domain.ErrSendVerificationEmailFailed
 	}
 
 	return nil
@@ -83,13 +83,17 @@ func (uu *UserUsercase) VerifyEmail(ctx context.Context, emailToken string) erro
 
 	user, err := uu.userRepo.GetByID(ctx, verification.UserID)
 	if err != nil {
-		return err
+		return domain.ErrUserNotFound
 	}
 
 	user.Verified = true
 	user.UpdatedAt = time.Now()
 
-	return uu.userRepo.UpdateUser(ctx, user)
+	err = uu.userRepo.UpdateUser(ctx, user)
+	if err != nil{
+		return domain.ErrUserUpdateFailed
+	}
+	return err
 }
 
 func (uu *UserUsercase) Login(ctx context.Context, req *domain.LoginInput, metadata *domain.AuthMetadata) (*domain.LoginResult, error) {
@@ -115,12 +119,12 @@ func (uu *UserUsercase) Login(ctx context.Context, req *domain.LoginInput, metad
 	}
 	accessToken, err := uu.tokenService.GenerateAccessToken(existingUser)
 	if err != nil {
-		return nil, err
+		return nil, domain.ErrAccessTokenGenerationFailed
 	}
 
 	refreshTokenString, err := uu.tokenService.GenerateRefreshToken(existingUser)
 	if err != nil {
-		return nil, err
+		return nil, domain.ErrRefreshTokenGenerationFailed
 	}
 	refreshToken := &domain.RefreshToken{
 		ID:         uuid.New().String(),
@@ -204,7 +208,7 @@ func (uu *UserUsercase) LoginOrRegisterOAuthUser(ctx context.Context, registerIn
 func(uu *UserUsercase) RefreshToken(ctx context.Context, refreshTokenString string) (*domain.LoginResult, error){
 	refreshToken, err := uu.userRepo.GetByToken(ctx, refreshTokenString)
 	if err != nil{
-		return nil , err
+		return nil , domain.ErrRefreshTokenNotFound
 	}
 	if time.Now().After(refreshToken.ExpiresAt){
 		return nil, domain.ErrRefreshTokenExpired
@@ -214,11 +218,11 @@ func(uu *UserUsercase) RefreshToken(ctx context.Context, refreshTokenString stri
 	}
 	user, err:= uu.userRepo.GetByID(ctx,refreshToken.UserID)
 	if err != nil{
-		return nil, err
+		return nil, domain.ErrUserNotFound
 	}
 	accesToken, err:= uu.tokenService.GenerateAccessToken(user)
 	if err != nil{
-		return nil, err
+		return nil, domain.ErrAccessTokenGenerationFailed
 	}
 	loginResult := &domain.LoginResult{
 		AccessToken: accesToken,
@@ -243,13 +247,45 @@ func(uu *UserUsercase) ForgotPassword(ctx context.Context, email string) error{
 	}
 	err = uu.userRepo.SaveVerificationToken(ctx, resetToken)
 	if err != nil{
-		return err
+		return domain.ErrVerificationTokenSaveFailed
 	}
 	err = uu.emailService.SendPasswordReset(email, tokenStirng)
 	if err != nil{
-		return err
+		return domain.ErrSendVerificationEmailFailed
 	}
 	return nil
 	
 }
+func(uu *UserUsercase) ResetPassword(ctx context.Context, resetToken, newPassword string) error{
+	emailToken, err := uu.userRepo.GetVerificationToken(ctx, resetToken)
+	if err!= nil{
+		return domain.ErrInvalidToken 
+	}
+	user, err:= uu.userRepo.GetByID(ctx, emailToken.UserID)
+	if err!=nil{
+		return domain.ErrUserNotFound
+	}
+	if !uu.passwordService.IsPasswordStrong(newPassword) {
+		return domain.ErrWeakPassword
+
+	}
+	hashedPassword, err := uu.passwordService.HashPassword(newPassword)
+	if err != nil {
+		return domain.ErrPasswordHashingFailed
+	}
+	user.Password = hashedPassword 
+	err = uu.userRepo.UpdateUser(ctx, user)
+	if err != nil{
+		return domain.ErrUserUpdateFailed
+	}
+	return nil
+}
+
+func(uu *UserUsercase) GetProfile(ctx context.Context, userID string) (*domain.User, error)
+
+func(uu *UserUsercase) UpdateProfile(ctx context.Context, updateProfileInpute *domain.UpdateProfileInput) error
+
+func(uu *UserUsercase) UpdateAccount(ctx context.Context, updateAccoutInput *domain.UpdateAccountInput) error
+
+func(uu *UserUsercase)ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
 

@@ -16,7 +16,12 @@ type Config struct {
 	MongodbName string
 	JwtSecret   string
 	ServerPort  string
-	BackendURL string 
+	BackendURL string
+	MailtrapHost string
+	MailtrapPort string
+	MailtrapUsername string
+	MailtrapPassword string
+	MailtrapFrom string 
 }
 
 func LoadEnv() (*Config, error) {
@@ -28,6 +33,11 @@ func LoadEnv() (*Config, error) {
 		JwtSecret:   os.Getenv("JWT_SECRET"),
 		ServerPort:  os.Getenv("SERVER_PORT"),
 		BackendURL: os.Getenv("BACKEND_BASE_URL"),
+		MailtrapHost: os.Getenv("MAILTRAP_HOST"),
+		MailtrapPort: os.Getenv("MAILTRAP_PORT"),
+		MailtrapUsername: os.Getenv("MAILTRAP_USERNAME"),
+		MailtrapPassword: os.Getenv("MAILTRAP_PASSWORD"),
+		MailtrapFrom: os.Getenv("MAILTRAP_FROM"),
 	}
 
 	var missing []string
