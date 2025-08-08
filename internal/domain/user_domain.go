@@ -66,6 +66,7 @@ type IUserRepository interface {
     //clean up
     DeleteUnverifiedExpiredUsers(ctx context.Context, expiration time.Duration)error
     DeleteOldRevokedTokens(ctx context.Context, olderThan time.Duration)error
+    DeleteVerificationToken(ctx context.Context, token string)error
 }
 
 type IPasswordService interface {
@@ -99,13 +100,16 @@ type IUserUsecase interface {
 
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, updateProfileInpute *UpdateProfileInput) error
-    UpdateAccount(ctx context.Context, updateAccoutInput *UpdateAccountInput) error
+    UpdateUsername(ctx context.Context, updateAccoutInput *UpdateAccountInput) error
+    UpdateEmail(ctx context.Context, updateAccoutInput *UpdateAccountInput) error
 	ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error
     ForgotPassword(ctx context.Context, email string) error
     ResetPassword(ctx context.Context, resetToken, newPassword string) error
 
     DemoteToUser(ctx context.Context, UserID string) error
     PromoteToAdmin(ctx context.Context, UserID string) error
+    DisableUser(ctx context.Context, userID string) error
+    EnableUser(ctx context.Context, userID string) error
 }
 
 type LoginResult struct {

@@ -27,16 +27,17 @@ func UserRouter(r *gin.Engine, userController *controller.UserController, authMi
 	{
 		user.GET("/me", userController.MyProfile)
 		user.PATCH("/me", userController.UpdateMyProfile)
-		user.PATCH("/account", userController.UpdateMyAccount)
+		user.PATCH("/username", userController.UpdateMyUsername)
+		user.PATCH("/email", userController.UpdateMyEmail)
 		user.PUT("/password",userController.ChangeMyPassword)
 		
 	}
 	admin := r.Group("/admin")
 	admin.Use(authMiddleware.Authmiddleware(), infrastructure.RequireRole(domain.RoleAdmin, domain.RoleSuperAdmin))
 	{
-		admin.PUT(("/user/:id/promote"), userController.PromoteToAdmin)
+		admin.PUT("/user/:id/promote", userController.PromoteToAdmin)
 		admin.PUT("/user/:id/demote", userController.DemoteToUser)
-		admin.PUT("/user/:id/disabel", userController.DisabelUser)
+		admin.PUT("/user/:id/disable", userController.DisableUser)
 		admin.PUT("/user/:id/enable", userController.EnableUser)
 	}
 

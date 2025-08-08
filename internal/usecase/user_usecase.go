@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"log"
 	"strings"
 	"time"
 	"write_base/internal/domain"
@@ -57,7 +58,7 @@ func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput)
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	// 2. Generate email verification token
+	// Generate email verification token
 	token := uuid.New().String()
 	verificationToken := &domain.EmailVerificationToken{
 		ID:        uuid.New().String(),
@@ -103,32 +104,10 @@ func (uu *UserUsercase) VerifyEmail(ctx context.Context, emailToken string) erro
 	if err != nil{
 		return domain.ErrUserUpdateFailed
 	}
-	return nil
-}
-func (uu *UserUsercase)VerifyUpdateEmail(ctx context.Context, emailToken string) error{
-	verification, err := uu.userRepo.GetVerificationToken(ctx, emailToken)
-	if err != nil {
-		return domain.ErrInvalidToken
-	}
-	if time.Now().After(verification.ExpiresAt) {
-		return domain.ErrExpiredToken
-	}
-
-	user, err := uu.userRepo.GetByID(ctx, verification.UserID)
-	if err != nil {
-		return domain.ErrUserNotFound
-	}
-
-	user.Verified = true
-	user.Email = verification.Email
-	user.UpdatedAt = time.Now()
-
-	err = uu.userRepo.UpdateUser(ctx, user)
-	if err != nil{
-		return domain.ErrUserUpdateFailed
+	if err := uu.userRepo.DeleteVerificationToken(ctx, emailToken); err != nil {
+		log.Println("Failed to delete verification token:", err)
 	}
 	return nil
-
 }
 
 func (uu *UserUsercase) Login(ctx context.Context, req *domain.LoginInput, metadata *domain.AuthMetadata) (*domain.LoginResult, error) {
@@ -370,33 +349,81 @@ func(uu *UserUsercase)ChangePassword(ctx context.Context, userID, oldPassword, n
     }
     return nil
 }
-func(uu *UserUsercase) UpdateAccount(ctx context.Context, updateAccoutInput *domain.UpdateAccountInput) error{
-	// user, err := uu.userRepo.GetByID(ctx, updateAccoutInput.UserID)
-	// if err != nil {
-	// 	return domain.ErrUserNotFound
-	// }
-	// if updateAccoutInput.Username != "" && {
+func(uu *UserUsercase) UpdateUsername(ctx context.Context, updateAccoutInput *domain.UpdateAccountInput) error{
+	user, err := uu.userRepo.GetByID(ctx, updateAccoutInput.UserID)
+	if err != nil {
+		return domain.ErrUserNotFound
+	}
+	if user.Username == updateAccoutInput.Username{
+		return nil
+	}
+	if _,err := uu.userRepo.GetByUsername(ctx, updateAccoutInput.Username); err == nil{
+		return domain.ErrUsernameAlreadyExists
+	}
+	user.Username = updateAccoutInput.Username
+	if err := uu.userRepo.UpdateUser(ctx, user); err != nil{
+		return domain.ErrUserUpdateFailed
+	}
+	return nil
 
-	// }
-	// token := uuid.New().String()
-	// verificationToken := &domain.EmailVerificationToken{
-	// 	ID:        uuid.New().String(),
-	// 	UserID:    user.ID,
-	// 	Email:     updateAccoutInput.Email,
-	// 	Token:     token,
-	// 	ExpiresAt: time.Now().Add(5 * time.Minute), 
-	// 	CreatedAt: time.Now(),
-	// }
-	// err = uu.userRepo.SaveVerificationToken(ctx, verificationToken)
-	// if err != nil {
-	// 	return domain.ErrVerificationTokenSaveFailed
-	// }
-	// err = uu.emailService.SendUpdateVerificationEmail(updateAccoutInput.Email, token)
-	// if err != nil {
-	// 	return domain.ErrSendVerificationEmailFailed
-	// }
+}
+func(uu *UserUsercase) UpdateEmail(ctx context.Context, updateAccoutInput *domain.UpdateAccountInput) error{
+	user, err := uu.userRepo.GetByID(ctx, updateAccoutInput.UserID)
+	if err != nil {
+		return domain.ErrUserNotFound
+	}
+	if user.Email == updateAccoutInput.Email{
+		return nil
+	}
+	if _,err := uu.userRepo.GetByEmail(ctx, updateAccoutInput.Email); err == nil{
+		return domain.ErrEmailAlreadyExists
+	}
+	token := uuid.New().String()
+	verificationToken := &domain.EmailVerificationToken{
+		ID:        uuid.New().String(),
+		UserID:    user.ID,
+		Email:     updateAccoutInput.Email,
+		Token:     token,
+		ExpiresAt: time.Now().Add(5 * time.Minute), 
+		CreatedAt: time.Now(),
+	}
+	err = uu.emailService.SendUpdateVerificationEmail(updateAccoutInput.Email, token)
+	if err != nil {
+		return domain.ErrSendVerificationEmailFailed
+	}
+	err = uu.userRepo.SaveVerificationToken(ctx, verificationToken)
+	if err != nil {
+		return domain.ErrVerificationTokenSaveFailed
+	}
 	return nil
 }
+func (uu *UserUsercase) VerifyUpdateEmail(ctx context.Context, token string) error {
+	verificationToken, err := uu.userRepo.GetVerificationToken(ctx, token)
+	if err != nil{
+		return domain.ErrInvalidToken
+	} 
+	if verificationToken.ExpiresAt.Before(time.Now()) {
+		return domain.ErrExpiredToken
+	}
+
+	user, err := uu.userRepo.GetByID(ctx, verificationToken.UserID)
+	if err != nil {
+		return domain.ErrUserNotFound
+	}
+
+	user.Email = verificationToken.Email
+	user.UpdatedAt = time.Now()
+	if err := uu.userRepo.UpdateUser(ctx, user); err != nil {
+		return domain.ErrEmailUpdateFailed
+	}
+
+	if err := uu.userRepo.DeleteVerificationToken(ctx, token); err != nil {
+		log.Println("Failed to delete verification token:", err)
+	}
+
+	return nil
+}
+
 
 //////============Admin usecases ============
 
@@ -439,3 +466,39 @@ func(uu *UserUsercase) UpdateAccount(ctx context.Context, updateAccoutInput *dom
     }
     return nil
  }
+func (uu *UserUsercase) DisableUser(ctx context.Context, userID string) error {
+    user, err := uu.userRepo.GetByID(ctx, userID)
+    if err != nil {
+        return domain.ErrUserNotFound
+    }
+    if !user.IsActive {
+        return nil // Already disabled
+    }
+	if user.Role == domain.RoleSuperAdmin{
+		return domain.ErrSuperAdminCannotBeDisable
+	}
+    user.IsActive = false
+    user.UpdatedAt = time.Now()
+    err = uu.userRepo.UpdateUser(ctx, user)
+    if err != nil {
+        return domain.ErrUserUpdateFailed
+    }
+    return nil
+}
+
+func (uu *UserUsercase) EnableUser(ctx context.Context, userID string) error {
+    user, err := uu.userRepo.GetByID(ctx, userID)
+    if err != nil {
+        return domain.ErrUserNotFound
+    }
+    if user.IsActive {
+        return nil // Already enabled
+    }
+    user.IsActive = true
+    user.UpdatedAt = time.Now()
+    err = uu.userRepo.UpdateUser(ctx, user)
+    if err != nil {
+        return domain.ErrUserUpdateFailed
+    }
+    return nil
+}

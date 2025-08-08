@@ -222,3 +222,7 @@ func (r *UserRepository) GetVerificationToken(ctx context.Context, emailToken st
     }
     return emailVerificationTokenDTOToDomain(dto), nil
 }
+func (r *UserRepository) DeleteVerificationToken(ctx context.Context, token string) error {
+    _, err := r.EmailTokenCollection.DeleteOne(ctx, bson.M{"token": token})
+    return err
+}

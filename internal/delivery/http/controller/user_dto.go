@@ -124,10 +124,15 @@ type UpdateProfileRequest struct {
     ProfileImage *string `json:"profile_image,omitempty"`
 }
 type UpdateAccountRequest struct {
-    Username *string `json:"username,omitempty"`
-    Email    *string `json:"email,omitempty"`
+    Username string `json:"username,omitempty"`
+    Email    string `json:"email,omitempty"`
 }
-// --- Optional Admin DTOs ---
+type UpdateUsername struct {
+    Username string `json:"username" binding:"required,min=3"`
+}
+type UpdateEmail struct {
+    Email string `json:"username" binding:"required,eamil"`
+}
 
 // PromoteDemoteUserRequest - for promote/demote if needed
 type PromoteDemoteUserRequest struct {

@@ -73,7 +73,9 @@ var (
 	ErrRefreshTokenRevoked         = Error{Code: "AUTH_010", Message: "Refresh token has been revoked"}
 	ErrRefreshTokenNotFound        = Error{Code: "AUTH_011", Message: "Refresh token not found"}
 	ErrSuperAdminCannotBeDemoted = Error{Code:"AUTH_012", Message:"Super admin cannot be demoted"}
-	ErrSuperAdminCannotBePromoted = Error{Code:"AUTH_013", Message:"Super admin cannot be promoted"}
+	ErrSuperAdminCannotBePromoted = Error{Code:"AUTH_014", Message:"Super admin cannot be promoted"}
+	ErrEmailUpdateFailed = Error{Code:"AUTH_013", Message:"failed to update email"}
+	ErrSuperAdminCannotBeDisable = Error{Code:"AUTH_015", Message:"super admin cannot be disable"}
 )
 
 // ===========================================================================//

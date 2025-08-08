@@ -46,7 +46,7 @@ func (m *MailtrapService) SendPasswordReset(email, token, baseUrl string) error 
 func (m *MailtrapService) SendUpdateVerificationEmail(email, code, baseUrl string) error {
 	subject := "Verify Your New Eamil Account"
 	
-	body := fmt.Sprintf("If you did not request update Email ignore these message\n\nClick this link to verify your account:\n\n%s/auth/verify-Update-Email?code=%s",baseUrl, code)
+	body := fmt.Sprintf("If you did not request update Email ignore these message\n\nClick this link to verify your account:\n\n%s/auth/verify-Update-Email?token=%s",baseUrl, code)
 	return m.sendEmail(email, subject, body)
 
 }
