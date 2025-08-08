@@ -21,10 +21,8 @@ import (
 	usecasereport "write_base/internal/usecase/report"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"write_base/internal/repository"
 	"write_base/internal/usecase"
+	"write_base/internal/infrastructure"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"

@@ -1,7 +1,4 @@
 package router
-<<<<<<< HEAD
-=======
-
 import (
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/domain"
@@ -66,8 +63,6 @@ func RegisterAIRoutes(r *gin.Engine, aiController *controller.AIController) {
         ai.POST("/generate-content", aiController.GenerateContent)
     }
 }
-
->>>>>>> db01b7ccbb021495f49294eeab89e897628a9ea6
 
 
 
