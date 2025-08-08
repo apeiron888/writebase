@@ -62,3 +62,4 @@ func RegisterAIRoutes(r *gin.Engine, aiController *controller.AIController) {
         ai.POST("/generate-content", aiController.GenerateContent)
     }
 }
+
