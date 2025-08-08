@@ -23,23 +23,26 @@ var (
 	ErrConflict            = Error{Code: "GEN_008", Message: "Resource conflict"}
 	ErrUnprocessableEntity = Error{Code: "GEN_009", Message: "Unprocessable entity"}
 )
+
 //===========================================================================//
 //                        Article Errors                                     //
 //===========================================================================//
 var (
 	ErrArticleNotFound           = Error{Code: "ARTICLE_001", Message: "Article not found"}
-	ErrInvalidArticleID          = Error{Code: "ARTICLE_002", Message: "Invalid article ID format"}
-	ErrArticleTitleEmpty         = Error{Code: "ARTICLE_003", Message: "Article title cannot be empty"}
-	ErrArticleContentEmpty       = Error{Code: "ARTICLE_004", Message: "Article content cannot be empty"}
-	ErrArticleTooLong            = Error{Code: "ARTICLE_005", Message: "Article exceeds maximum length"}
-	ErrArticleTagLimitExceeded   = Error{Code: "ARTICLE_006", Message: "Maximum number of tags exceeded"}
-	ErrDuplicateArticleSlug      = Error{Code: "ARTICLE_007", Message: "Article slug already exists"}
-	ErrUnauthorizedArticleEdit   = Error{Code: "ARTICLE_008", Message: "You are not allowed to edit this article"}
-	ErrUnauthorizedArticleDelete = Error{Code: "ARTICLE_009", Message: "You are not allowed to delete this article"}
-	ErrArticleAlreadyPublished   = Error{Code: "ARTICLE_010", Message: "Article is already published"}
-	ErrMaxArticlesPerUser        = Error{Code: "ARTICLE_011", Message: "User has reached the article creation limit"}
-	ErrArticleSearchFailed       = Error{Code: "ARTICLE_012", Message: "Failed to search articles"}
-
-	
-	ErrMaxClaps = Error{Code: "CLAP_001", Message: "Maximum claps reached"}
+	ErrArticleAlreadyExists      = Error{Code: "ARTICLE_002", Message: "Article already exists"}
+	ErrInvalidArticleID          = Error{Code: "ARTICLE_003", Message: "Invalid article ID format"}
+	ErrArticleTitleEmpty         = Error{Code: "ARTICLE_004", Message: "Article title cannot be empty"}
+	ErrArticleContentEmpty       = Error{Code: "ARTICLE_005", Message: "Article content cannot be empty"}
+	ErrArticleTooLong            = Error{Code: "ARTICLE_006", Message: "Article exceeds maximum length"}
+	ErrArticleTagLimitExceeded   = Error{Code: "ARTICLE_007", Message: "Maximum number of tags exceeded"}
+	ErrDuplicateArticleSlug      = Error{Code: "ARTICLE_008", Message: "Article slug already exists"}
+	ErrUnauthorizedArticleEdit   = Error{Code: "ARTICLE_009", Message: "You are not allowed to edit this article"}
+	ErrUnauthorizedArticleDelete = Error{Code: "ARTICLE_010", Message: "You are not allowed to delete this article"}
+	ErrArticleAlreadyPublished   = Error{Code: "ARTICLE_011", Message: "Article is already published"}
+	ErrMaxArticlesPerUser        = Error{Code: "ARTICLE_012", Message: "User has reached the article creation limit"}
+	ErrArticleSearchFailed       = Error{Code: "ARTICLE_013", Message: "Failed to search articles"}
+	ErrArticleNotPublished       = Error{Code: "ARTICLE_014", Message: "Article is not published"}
+	ErrArticleNotArchived        = Error{Code: "ARTICLE_015", Message: "Article is not archived"}
+	ErrNoChangesDetected         = Error{Code: "ARTICLE_016", Message: "No changes detected in the article"}
+	ErrClapLimitExceeded         = Error{Code: "ARTICLE_017", Message: "Clap limit exceeded"}
 )
