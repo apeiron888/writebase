@@ -12,7 +12,6 @@ import (
 	"write_base/config"
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
-	"write_base/internal/repository"
 	usecaseai "write_base/internal/usecase/ai"
 	usecasecomment "write_base/internal/usecase/comment"
 	usecasefollow "write_base/internal/usecase/follow"
@@ -38,8 +37,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	}
 	db := client.Database(cfg.MongodbName)
 
-	// Repositories
-commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
+	commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
 reactionRepo := repository.NewMongoReactionRepository(db.Collection("reactions"))
 followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
 reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
@@ -59,8 +57,29 @@ reportController := controller.NewReportController(reportUsecase)
 aiController := controller.NewAIController(aiGemini)
 
 
+	// Repositories
+	//.............
+	articleRepo := repository.NewArticleRepository(db, "articles")
+	policy := usecase.NewArticlePolicy()
+	clapRepo := repository.NewArticleClapRepository(db, "article_claps")
+	viewRepo := repository.NewArticleViewRepository(db, "article_views")
+
+	// Usecases
+	//.........
+	clapUsecase := usecase.NewClapUsecase(clapRepo)
+	viewUsecase := usecase.NewViewUsecase(viewRepo)
+	articleUsecase := usecase.NewArticleUsecase(articleRepo, clapUsecase, viewUsecase)
+
+	// Auth service
+	//............
+
+	// Handlers
+	//.........
+	articleHandler := controller.NewArticleHandler(articleUsecase)
+
 // Router
 r := gin.Default()
+router.RegisterArticleRouter(r,articleHandler)
 router.RegisterCommentRoutes(r, commentController)
 router.RegisterReactionRoutes(r, reactionController)
 router.RegisterFollowRoutes(r, followController)
