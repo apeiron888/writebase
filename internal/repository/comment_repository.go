@@ -2,8 +2,11 @@ package repository
 
 import (
 	"context"
+	"log"
 	"write_base/internal/domain"
 	dtodbrep "write_base/internal/repository/dto"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -60,9 +63,14 @@ func (r *MongoCommentRepository) Delete(ctx context.Context, commentID string) e
 }
 
 func (r *MongoCommentRepository) GetByID(ctx context.Context, commentID string) (*domain.Comment, error) {
-	filter := bson.M{"_id": commentID}
+	log.Println("Fetching comment by ID:", commentID)
+	objID, err := primitive.ObjectIDFromHex(commentID)
+    if err != nil {
+        return nil, domain.ErrCommentNotFound // or return a 400 error if you want
+    }
+	filter := bson.M{"_id": objID}
 	var dto dtodbrep.CommentResponse
-	err := r.collection.FindOne(ctx, filter).Decode(&dto)
+	err = r.collection.FindOne(ctx, filter).Decode(&dto)
 	if err == mongo.ErrNoDocuments {
 		return nil, domain.ErrCommentNotFound
 	}
