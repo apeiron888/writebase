@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,7 +13,16 @@ import (
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
 	"write_base/internal/domain"
-	"write_base/internal/infrastructure"
+	"write_base/internal/repository"
+	usecaseai "write_base/internal/usecase/ai"
+	usecasecomment "write_base/internal/usecase/comment"
+	usecasefollow "write_base/internal/usecase/follow"
+	usecasereaction "write_base/internal/usecase/reaction"
+	usecasereport "write_base/internal/usecase/report"
+
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"write_base/internal/repository"
 	"write_base/internal/usecase"
 
@@ -120,6 +127,26 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		Endpoint: google.Endpoint,
 	}
 
+commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
+reactionRepo := repository.NewMongoReactionRepository(db.Collection("reactions"))
+followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
+reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
+
+// Usecases
+commentUsecase := usecasecomment.NewCommentUsecase(commentRepo)
+reactionUsecase := usecasereaction.NewReactionService(reactionRepo)
+followUsecase := usecasefollow.NewFollowService(followRepo)
+reportUsecase := usecasereport.NewReportService(reportRepo)
+aiGemini := usecaseai.NewGeminiClient(cfg.GeminiAPIKey)
+
+// Controllers
+commentController := controller.NewCommentController(commentUsecase)
+reactionController := controller.NewReactionController(reactionUsecase)
+followController := controller.NewFollowController(followUsecase)
+reportController := controller.NewReportController(reportUsecase)
+aiController := controller.NewAIController(aiGemini)
+
+
 	// Repositories
 	//.............
 	userRepository := repository.NewUserRepository(db)
@@ -149,17 +176,20 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	
 	// Handlers
 	//.........
-	userController := controller.NewUserController(userUsecase, GoogleOAuthConfig)
+	 userController := controller.NewUserController(userUsecase, GoogleOAuthConfig)
 
-	// Router
-	// Add all handlers as params
-	// Add Auth Sevice as param
-	// Add cfg.ServerPort
-	r := gin.Default()
-	router.UserRouter(r, userController, authMiddleware)
+// Router
+r := gin.Default()
+// router.RegisterArticleRouter(r,articleHandler)
+router.UserRouter(r, userController, authMiddleware)
+router.RegisterCommentRoutes(r, commentController)
+router.RegisterReactionRoutes(r, reactionController)
+router.RegisterFollowRoutes(r, followController)
+router.RegisterReportRoutes(r, reportController)
+router.RegisterAIRoutes(r, aiController)
 
-	return &Container{
-		Router:     r,
-		MongoClient: client,
-	}, nil
+return &Container{
+	   Router:     r,
+	   MongoClient: client,
+}, nil
 }
