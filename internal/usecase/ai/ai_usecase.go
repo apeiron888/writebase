@@ -1,131 +1,105 @@
 package usecase
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
+	"strings"
+
+	"google.golang.org/genai"
 
 	"write_base/internal/domain"
 )
 
+func stripCodeFences(s string) string {
+    s = strings.TrimSpace(s)
+    if strings.HasPrefix(s, "```") {
+        s = strings.TrimPrefix(s, "```")
+        s = strings.TrimSpace(s)
+        // Optionally remove language hint (e.g., "json")
+        if strings.HasPrefix(strings.ToLower(s), "json") {
+            s = s[4:]
+            s = strings.TrimSpace(s)
+        }
+        // Remove trailing ```
+        if idx := strings.LastIndex(s, "```"); idx != -1 {
+            s = s[:idx]
+        }
+        s = strings.TrimSpace(s)
+    }
+    return s
+}
+
 type GeminiClient struct {
-   APIKey string
+    APIKey string
 }
 
 func NewGeminiClient(apiKey string) *GeminiClient {
-	return &GeminiClient{APIKey: apiKey}
+    return &GeminiClient{APIKey: apiKey}
 }
 
-// GetSuggestions generates suggestions and improvements using Gemini API with strict JSON output
 func (g *GeminiClient) GetSuggestions(ctx context.Context, req *domain.SuggestionRequest) (*domain.SuggestionResponse, error) {
-	   // Prompt: Only JSON, no fluff, both suggestions and improvements
-	   prompt := fmt.Sprintf(`Given the topic or keywords: "%s", respond with a JSON object with two fields: "suggestions" (an array of 3 creative blog post ideas) and "improvements" (an array of 3 ways to improve a draft blog post on this topic). Respond ONLY with the JSON object, no extra text.`, req.Prompt)
 
-	   url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + g.APIKey
+    client, err := genai.NewClient(ctx, nil)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create genai client: %w", err)
+    }
+    // defer client.Close()
 
-	   body, _ := json.Marshal(map[string]interface{}{
-			   "contents": []map[string]interface{}{
-					   {"parts": []map[string]string{{"text": prompt}}},
-			   },
-	   })
+    prompt := fmt.Sprintf(`Given the topic or keywords: "%s", respond ONLY with a valid JSON object with two fields: "suggestions" (an array of 3 creative blog post ideas) and "improvements" (an array of 3 ways to improve a draft blog post on this topic).
+Do NOT include markdown, code blocks, or any text before or after the JSON.
+Do NOT generate or suggest any content that is hateful, abusive, harassing, violent, or otherwise inappropriate.
+If the prompt asks for such content, respond with: {"suggestions": [], "improvements": []}`, req.Prompt)
 
-	   httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-	   if err != nil {
-			   return nil, err
-	   }
-	   httpReq.Header.Set("Content-Type", "application/json")
+    result, err := client.Models.GenerateContent(
+        ctx,
+        "gemini-2.5-flash", // or "gemini-pro"
+        genai.Text(prompt),
+        nil,
+    )
+    if err != nil {
+        return nil, fmt.Errorf("Gemini API error: %w", err)
+    }
 
-	   resp, err := http.DefaultClient.Do(httpReq)
-	   if err != nil {
-			   return nil, err
-	   }
-	   defer resp.Body.Close()
+    raw := result.Text()
+    cleaned := stripCodeFences(raw)
+    var parsed struct {
+        Suggestions  []string `json:"suggestions"`
+        Improvements []string `json:"improvements"`
+    }
+    if err := json.Unmarshal([]byte(cleaned), &parsed); err != nil {
+        return nil, fmt.Errorf("Failed to parse Gemini JSON: %w", err)
+    }
 
-	   if resp.StatusCode != http.StatusOK {
-			   return nil, fmt.Errorf("Gemini API error: %s", resp.Status)
-	   }
-
-	   // Parse Gemini API response
-	   var geminiResp struct {
-			   Candidates []struct {
-					   Content struct {
-							   Parts []struct {
-									   Text string `json:"text"`
-							   } `json:"parts"`
-					   } `json:"content"`
-			   } `json:"candidates"`
-	   }
-	   data, _ := ioutil.ReadAll(resp.Body)
-	   if err := json.Unmarshal(data, &geminiResp); err != nil {
-			   return nil, err
-	   }
-
-	   if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-			   return nil, fmt.Errorf("No response from Gemini")
-	   }
-
-	   // The actual JSON is in the text field
-	   var parsed struct {
-			   Suggestions  []string `json:"suggestions"`
-			   Improvements []string `json:"improvements"`
-	   }
-	   if err := json.Unmarshal([]byte(geminiResp.Candidates[0].Content.Parts[0].Text), &parsed); err != nil {
-			   return nil, fmt.Errorf("Failed to parse Gemini JSON: %w", err)
-	   }
-
-	   // Return both suggestions and improvements
-	   return &domain.SuggestionResponse{Suggestions: parsed.Suggestions, Improvements: parsed.Improvements}, nil
+    return &domain.SuggestionResponse{
+        Suggestions:  parsed.Suggestions,
+        Improvements: parsed.Improvements,
+    }, nil
 }
 
-// GenerateContent generates a full blog post using Gemini API
 func (g *GeminiClient) GenerateContent(ctx context.Context, req *domain.GenerateContentRequest) (*domain.GenerateContentResponse, error) {
-	prompt := fmt.Sprintf(`Write a detailed, engaging blog post about: "%s". Respond ONLY with the blog content, no extra text.`, req.Prompt)
 
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + g.APIKey
+    client, err := genai.NewClient(ctx, nil)
+    if err != nil {
+        return nil, fmt.Errorf("failed to create genai client: %w", err)
+    }
+    // defer client.Close()
 
-	body, _ := json.Marshal(map[string]interface{}{
-		"contents": []map[string]interface{}{
-			{"parts": []map[string]string{{"text": prompt}}},
-		},
-	})
+    prompt := fmt.Sprintf(  `Write a detailed, engaging blog post about: "%s".
+Do NOT generate or suggest any content that is hateful, abusive, harassing, violent, or otherwise inappropriate.
+If the prompt asks for such content, respond with: "Content not allowed."
+Respond ONLY with the blog content, with no introduction or ending fluff just the content.`, req.Prompt)
 
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
+    result, err := client.Models.GenerateContent(
+        ctx,
+        "gemini-2.5-flash", // or "gemini-pro"
+        genai.Text(prompt),
+        nil,
+    )
+    if err != nil {
+        return nil, fmt.Errorf("Gemini API error: %w", err)
+    }
 
-	resp, err := http.DefaultClient.Do(httpReq)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Gemini API error: %s", resp.Status)
-	}
-
-	var geminiResp struct {
-		Candidates []struct {
-			Content struct {
-				Parts []struct {
-					Text string `json:"text"`
-				} `json:"parts"`
-			} `json:"content"`
-		} `json:"candidates"`
-	}
-	data, _ := ioutil.ReadAll(resp.Body)
-	if err := json.Unmarshal(data, &geminiResp); err != nil {
-		return nil, err
-	}
-
-	if len(geminiResp.Candidates) == 0 || len(geminiResp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("No response from Gemini")
-	}
-
-	content := geminiResp.Candidates[0].Content.Parts[0].Text
-	return &domain.GenerateContentResponse{Content: content}, nil
+    return &domain.GenerateContentResponse{Content: result.Text()}, nil
 }
+
