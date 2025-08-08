@@ -22,6 +22,9 @@ type Config struct {
 	MailtrapUsername string
 	MailtrapPassword string
 	MailtrapFrom string 
+	ClientID    string
+	ClientSecret string
+	RedirectURL string
 }
 
 func LoadEnv() (*Config, error) {
@@ -38,6 +41,9 @@ func LoadEnv() (*Config, error) {
 		MailtrapUsername: os.Getenv("MAILTRAP_USERNAME"),
 		MailtrapPassword: os.Getenv("MAILTRAP_PASSWORD"),
 		MailtrapFrom: os.Getenv("MAILTRAP_FROM"),
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("GOOGLE_REDIRECT_URL"),
 	}
 
 	var missing []string

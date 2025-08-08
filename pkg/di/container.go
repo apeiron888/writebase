@@ -3,9 +3,11 @@ package di
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -16,12 +18,56 @@ import (
 	"write_base/internal/infrastructure"
 	"write_base/internal/repository"
 	"write_base/internal/usecase"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 type Container struct {
 	Router *gin.Engine
 	MongoClient *mongo.Client 
 }
+func SeedSuperAdmin(ctx context.Context, userRepo domain.IUserRepository, passwordService domain.IPasswordService) error {
+	// Define the super admin credentials
+	email := "super@admin.com"
+	username := "superadmin"
+	password := "SuperSecurePass123"
+
+	// Check if already exists
+	existingUser, err := userRepo.GetByEmail(ctx, email)
+	if err == nil && existingUser != nil {
+		fmt.Println("Super admin already exists")
+		return nil
+	}
+
+	// Hash password
+	hashedPassword, err := passwordService.HashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	// Create user model
+	superAdmin := &domain.User{
+		ID:       uuid.New().String(),
+		Email:    email,
+		Username: username,
+		Password: hashedPassword,
+		Role:     "super_admin",
+		Verified: true,
+		CreatedAt: time.Now(),
+	}
+
+	// Create in DB
+	err = userRepo.CreateUser(ctx, superAdmin)
+	if err != nil {
+		return fmt.Errorf("failed to create super admin: %w", err)
+	}
+
+	fmt.Println("✅ Super admin created successfully")
+	return nil
+}
+
+
 func startCleanupJob(userRepo domain.IUserRepository, interval, expiration time.Duration) {
     go func() {
         ticker := time.NewTicker(interval)
@@ -61,6 +107,18 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, fmt.Errorf("MongoDB connection failed: %w", err)
 	}
 	db := client.Database(cfg.MongodbName)
+	//OAUTH
+	//.............
+	GoogleOAuthConfig := &oauth2.Config{
+		ClientID:    cfg.ClientID,
+		ClientSecret: cfg.ClientSecret,
+		RedirectURL:  cfg.RedirectURL,
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
 
 	// Repositories
 	//.............
@@ -69,8 +127,8 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	startCleanupJob(userRepository, time.Hour, 5*time.Minute)
 	// Clean up old revoked tokens (e.g., tokens revoked more than 24 hours ago)
     startRevokedTokenCleanupJob(userRepository, time.Hour, 5*time.Minute)
-
-
+	// create supper admin
+	
 	
 	// Auth service
 	//............
@@ -80,13 +138,18 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	tokenService := infrastructure.NewJWTService([]byte(cfg.JwtSecret))
 	authMiddleware := infrastructure.NewMiddleware(tokenService)
 	
+	// creating super admin
+	err = SeedSuperAdmin(ctx, userRepository, passwordService)
+	if err != nil {
+		log.Fatal("Failed to seed super admin:", err)
+	}
 	// Usecases
 	//.........
 	userUsecase:= usecase.NewUserUsecase(userRepository, passwordService, tokenService, emailService)
 	
 	// Handlers
 	//.........
-	userController := controller.NewUserController(userUsecase)
+	userController := controller.NewUserController(userUsecase, GoogleOAuthConfig)
 
 	// Router
 	// Add all handlers as params

@@ -2,8 +2,11 @@ package infrastructure
 
 import (
 	"fmt"
-	"net/smtp"
-	// "os"
+	"log"
+	// "net/smtp"
+	"strconv"
+
+	gomail "gopkg.in/mail.v2"
 )
 
 // MailtrapService implements IEmailService using Mailtrap's SMTP
@@ -30,6 +33,7 @@ func (m *MailtrapService) SendVerificationEmail(email, code, baseUrl string) err
 	subject := "Verify Your Account"
 	
 	body := fmt.Sprintf("Click this link to verify your account:\n\n%s/auth/verify?code=%s",baseUrl, code)
+	
 	return m.sendEmail(email, subject, body)
 }
 
@@ -47,18 +51,27 @@ func (m *MailtrapService) SendUpdateVerificationEmail(email, code, baseUrl strin
 
 }
 
-// internal shared logic
-func (m *MailtrapService) sendEmail(to, subject, body string) error {
-	auth := smtp.PlainAuth("", m.username, m.password, m.host)
 
-	msg := []byte(fmt.Sprintf(
-		"To: %s\r\nSubject: %s\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s",
-		to, subject, body,
-	))
 
-	address := fmt.Sprintf("%s:%s", m.host, m.port)
+func (m *MailtrapService) sendEmail(to, subject, body string) error{
+	message := gomail.NewMessage()
 
-	return smtp.SendMail(address, auth, m.from, []string{to}, msg)
+	message.SetHeader("From", m.from)
+	message.SetHeader("To", to)
+	message.SetHeader("subject", subject)
+	message.SetBody("text/plain", body)
+	portint,err:= strconv.Atoi(m.port)
+	log.Printf("Error:%v", err)
+	dialer:= gomail.NewDialer(m.host, portint, m.username, m.password)
+	dialer.SSL= true
+	if err := dialer.DialAndSend(message); err != nil {
+        log.Printf("Error:%v", err)
+		return err
+        // panic(err)
+    } else {
+        fmt.Println("Email sent successfully!")
+    }
+	return nil
 }
 
 
@@ -68,7 +81,7 @@ type EmailService struct {
 }
 
 func NewEmailService(mailtrap *MailtrapService, url string) *EmailService {
-    return &EmailService{mailtrap: mailtrap}
+    return &EmailService{mailtrap: mailtrap, baseUrl: url}
 }
 
 func (e *EmailService) SendVerificationEmail(email, code string) error {

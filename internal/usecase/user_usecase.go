@@ -21,11 +21,21 @@ func NewUserUsecase(repo domain.IUserRepository,pass domain.IPasswordService, tk
 }
 
 func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput) error {
-	if _, err := uu.userRepo.GetByEmail(ctx, req.Email); err == nil {
-		return domain.ErrEmailAlreadyExists
+	if user, err := uu.userRepo.GetByEmail(ctx, req.Email); err == nil {
+		if user != nil && !user.Verified && user.CreatedAt.Before(time.Now().Add(-5 * time.Minute)) {
+			_ = uu.userRepo.DeleteUser(ctx,user.ID) // cleanup on-the-fly
+		}else{
+
+			return domain.ErrEmailAlreadyExists
+		}
 	}
-	if _, err := uu.userRepo.GetByUsername(ctx, req.Username); err == nil {
-		return domain.ErrUsernameAlreadyExists
+	if user, err := uu.userRepo.GetByUsername(ctx, req.Username); err == nil {
+		if user != nil && !user.Verified && user.CreatedAt.Before(time.Now().Add(-5 * time.Minute)) {
+			_ = uu.userRepo.DeleteUser(ctx, user.ID) // cleanup on-the-fly
+		}else{
+
+			return domain.ErrUsernameAlreadyExists
+		}
 	}
 
 	if !uu.passwordService.IsPasswordStrong(req.Password) {
@@ -47,10 +57,6 @@ func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput)
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-	err = uu.userRepo.CreateUser(ctx, user)
-	if err != nil {
-		return domain.ErrUserCreationFailed
-	}
 	// 2. Generate email verification token
 	token := uuid.New().String()
 	verificationToken := &domain.EmailVerificationToken{
@@ -68,7 +74,11 @@ func (uu *UserUsercase) Register(ctx context.Context, req *domain.RegisterInput)
 	if err != nil {
 		return domain.ErrSendVerificationEmailFailed
 	}
-
+	
+	err = uu.userRepo.CreateUser(ctx, user)
+	if err != nil {
+		return domain.ErrUserCreationFailed
+	}
 	return nil
 }
 
