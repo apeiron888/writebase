@@ -13,7 +13,6 @@ import (
 	"write_base/internal/usecase"
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
-	"write_base/internal/infrastructure"
 )
 
 type Container struct {
@@ -37,14 +36,9 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	// Repositories
 	//.............
 	articleRepo := repository.NewArticleRepository(db, "articles")
-	clapRepo := repository.NewArticleClapRepository(db, "article_claps")
-	viewRepo := repository.NewArticleViewRepository(db, "article_views")
-
+	policy := usecase.NewArticlePolicy()
 	// Usecases
-	//.........
-	clapUsecase := usecase.NewClapUsecase(clapRepo)
-	viewUsecase := usecase.NewViewUsecase(viewRepo)
-	articleUsecase := usecase.NewArticleUsecase(articleRepo, clapUsecase, viewUsecase)
+	articleUsecase := usecase.NewArticleUsecase(articleRepo,policy)
 
 	// Auth service
 	//............
@@ -57,10 +51,11 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	// Add all handlers as params
 	// Add Auth Sevice as param
 	// Add cfg.ServerPort
-	router := router.NewRouter(articleHandler)
+	r:=gin.Default()
+	router.RegisterArticleRouter(r,articleHandler)
 
 	return &Container{
-		Router:     router,
+		Router:     r,
 		MongoClient: client,
 	}, nil
 }
