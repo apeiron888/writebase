@@ -5,25 +5,25 @@ import (
 	"fmt"
 	"time"
 
-	"write_base/config"
-	"write_base/internal/delivery/http/controller"
-	"write_base/internal/delivery/http/router"
-	"write_base/internal/repository"
-	usecaseai "write_base/internal/usecase/ai"
-	usecasecomment "write_base/internal/usecase/comment"
-	usecasefollow "write_base/internal/usecase/follow"
-	usecasereaction "write_base/internal/usecase/reaction"
-	usecasereport "write_base/internal/usecase/report"
-
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"write_base/config"
+	"write_base/internal/infrastructure/ai"
+	"write_base/internal/infrastructure/utils"
+	"write_base/internal/delivery/http/controller"
+	"write_base/internal/delivery/http/router"
+	"write_base/internal/policy"
+	"write_base/internal/repository"
+	"write_base/internal/usecase"
 )
 
 type Container struct {
 	Router *gin.Engine
-	MongoClient *mongo.Client 
+	MongoClient *mongo.Client
 }
+
 
 func NewContainer(cfg *config.Config) (*Container, error) {
 	// MongoDB client
@@ -38,57 +38,38 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	}
 	db := client.Database(cfg.MongodbName)
 
-commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
-reactionRepo := repository.NewMongoReactionRepository(db.Collection("reactions"))
-followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
-reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
-
-// Usecases
-commentUsecase := usecasecomment.NewCommentUsecase(commentRepo)
-reactionUsecase := usecasereaction.NewReactionService(reactionRepo)
-followUsecase := usecasefollow.NewFollowService(followRepo)
-reportUsecase := usecasereport.NewReportService(reportRepo)
-aiGemini := usecaseai.NewGeminiClient(cfg.GeminiAPIKey)
-
-// Controllers
-commentController := controller.NewCommentController(commentUsecase)
-reactionController := controller.NewReactionController(reactionUsecase)
-followController := controller.NewFollowController(followUsecase)
-reportController := controller.NewReportController(reportUsecase)
-aiController := controller.NewAIController(aiGemini)
-
-
 	// Repositories
-	//.............
-	// articleRepo := repository.NewArticleRepository(db, "articles")
-	// policy := usecase.NewArticlePolicy()
-	// clapRepo := repository.NewArticleClapRepository(db, "article_claps")
-	// viewRepo := repository.NewArticleViewRepository(db, "article_views")
+	articleRepo := repository.NewArticleRepository(db, "articles")
+	tagRepo := repository.NewTagRepository(db)
+	viewRepo := repository.NewViewRepository(db)
+	clapRepo := repository.NewClapRepository(db)
+
+	// Utils
+	utils := utils.NewUtils()
+
+	// AI
+	aiClient := ai.NewGeminiClient(cfg.GeminiAPIKey)
+	// Policy
+	policy := policy.NewArticlePolicy(utils)
 
 	// Usecases
-	//.........
-	// clapUsecase := usecase.NewClapUsecase(clapRepo)
-	// viewUsecase := usecase.NewViewUsecase(viewRepo)
-	// articleUsecase := usecase.NewArticleUsecase(articleRepo, clapUsecase, viewUsecase)
-
-	// Auth service
-	//............
+	tagUsecase := usecase.NewTagUsecase(tagRepo,utils)
+	viewUsecase := usecase.NewViewUsecase(viewRepo,utils)
+	clapUsecase := usecase.NewClapUsecase(clapRepo,utils)
+	articleUsecase := usecase.NewArticleUsecase(articleRepo,policy,utils,tagUsecase,viewUsecase,clapUsecase,aiClient)
 
 	// Handlers
-	//.........
-	// articleHandler := controller.NewArticleHandler(articleUsecase)
+	tagHandler := controller.NewTagHandler(tagUsecase)
+	articleHandler := controller.NewArticleHandler(articleUsecase)
+	
 
-// Router
-r := gin.Default()
-// router.RegisterArticleRouter(r,articleHandler)
-router.RegisterCommentRoutes(r, commentController)
-router.RegisterReactionRoutes(r, reactionController)
-router.RegisterFollowRoutes(r, followController)
-router.RegisterReportRoutes(r, reportController)
-router.RegisterAIRoutes(r, aiController)
 
-return &Container{
-	   Router:     r,
-	   MongoClient: client,
-}, nil
+	r:=gin.Default()
+	router.RegisterArticleRouter(r,articleHandler)
+	router.RegisterTagRouter(r, tagHandler)
+
+	return &Container{
+		Router:     r,
+		MongoClient: client,
+	}, nil
 }
