@@ -479,6 +479,9 @@ func (uu *UserUsercase) DisableUser(ctx context.Context, userID string) error {
 	}
     user.IsActive = false
     user.UpdatedAt = time.Now()
+	if err := uu.userRepo.RevokeAllByUser(ctx, userID); err != nil {
+        return err
+	}
     err = uu.userRepo.UpdateUser(ctx, user)
     if err != nil {
         return domain.ErrUserUpdateFailed

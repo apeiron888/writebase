@@ -61,6 +61,7 @@ func RequireRole(roles ...domain.UserRole) gin.HandlerFunc {
 		for _, allowed := range roles{
 			if role == allowed{
 				c.Next()
+				return
 			}
 		}
 		c.JSON(http.StatusForbidden, gin.H{"error": domain.ErrUnauthorized})
