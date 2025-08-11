@@ -25,12 +25,12 @@ func NewGeminiClient(apiKey string) *GeminiClient {
 		log.Fatalf("Failed to create Gemini client: %v", err)
 	}
 	model := client.GenerativeModel("gemini-2.0-flash")
-	
+
 	// Configure the model
 	model.SetTemperature(0.7)
 	model.SetTopK(40)
 	model.SetTopP(0.95)
-	
+
 	return &GeminiClient{client: model}
 }
 
@@ -39,11 +39,11 @@ func (g *GeminiClient) GenerateContent(ctx context.Context, prompt string) (stri
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no content generated")
 	}
-	
+
 	content := string(resp.Candidates[0].Content.Parts[0].(genai.Text))
 	return content, nil
 }
@@ -54,19 +54,19 @@ func (g *GeminiClient) GenerateSlug(ctx context.Context, title string) (string, 
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no content generated")
 	}
-	
+
 	slug := string(resp.Candidates[0].Content.Parts[0].(genai.Text))
-	
+
 	// Clean up the slug
 	slug = strings.TrimSpace(slug)
 	slug = strings.ToLower(slug)
 	slug = strings.ReplaceAll(slug, " ", "-")
 	slug = strings.ReplaceAll(slug, "--", "-")
-	
+
 	// Remove special characters
 	slug = strings.Map(func(r rune) rune {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
@@ -74,7 +74,7 @@ func (g *GeminiClient) GenerateSlug(ctx context.Context, title string) (string, 
 		}
 		return -1
 	}, slug)
-	
+
 	return slug, nil
 }
 
@@ -84,11 +84,11 @@ func (g *GeminiClient) EditContent(ctx context.Context, content string, instruct
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no content generated")
 	}
-	
+
 	editedContent := string(resp.Candidates[0].Content.Parts[0].(genai.Text))
 	return editedContent, nil
 }
@@ -99,11 +99,11 @@ func (g *GeminiClient) SummarizeContent(ctx context.Context, content string, max
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no content generated")
 	}
-	
+
 	summary := string(resp.Candidates[0].Content.Parts[0].(genai.Text))
 	return summary, nil
 }
@@ -114,11 +114,11 @@ func (g *GeminiClient) TranslateContent(ctx context.Context, content string, tar
 	if err != nil {
 		return "", err
 	}
-	
+
 	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
 		return "", fmt.Errorf("no content generated")
 	}
-	
+
 	translatedContent := string(resp.Candidates[0].Content.Parts[0].(genai.Text))
 	return translatedContent, nil
 }
