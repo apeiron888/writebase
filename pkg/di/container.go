@@ -59,6 +59,7 @@ func SeedSuperAdmin(ctx context.Context, userRepo domain.IUserRepository, passwo
 		Password: hashedPassword,
 		Role:     "super_admin",
 		Verified: true,
+		IsActive: true,
 		CreatedAt: time.Now(),
 	}
 
