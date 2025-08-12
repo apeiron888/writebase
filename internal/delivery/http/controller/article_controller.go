@@ -17,13 +17,13 @@ func NewArticleHandler(uc domain.IArticleUsecase) *Handler {
 }
 // =============================== Article Create ================================
 func (h *Handler) CreateArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 
     var articleReq *ArticleRequest
     if err := ctx.ShouldBindJSON(&articleReq); err != nil {
@@ -56,13 +56,13 @@ func (h *Handler) CreateArticle(ctx *gin.Context) {
 }
 // =============================== Article Update ================================
 func (h *Handler) UpdateArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	
     articleID := ctx.Param("id")
 
@@ -101,13 +101,13 @@ func (h *Handler) UpdateArticle(ctx *gin.Context) {
 }
 // =============================== Article Delete ================================
 func (h *Handler) DeleteArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
     articleID := ctx.Param("id")
     if err := h.Usecase.DeleteArticle(ctx,articleID,userID);err!=nil {
         code := http.StatusInternalServerError
@@ -124,13 +124,13 @@ func (h *Handler) DeleteArticle(ctx *gin.Context) {
 }
 // =============================== Article Restore ================================
 func (h *Handler) RestoreArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
     articleID := ctx.Param("id")
     if err := h.Usecase.RestoreArticle(ctx,articleID,userID);err!=nil {
         code := http.StatusInternalServerError
@@ -150,13 +150,13 @@ func (h *Handler) RestoreArticle(ctx *gin.Context) {
 //===============================================================================//
 // ======================== Article Publish =======================================
 func (h *Handler) PublishArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": domain.ErrArticleInvalidID})
@@ -188,13 +188,13 @@ func (h *Handler) PublishArticle(ctx *gin.Context) {
 }
 // ======================== Article Unpublish =====================================
 func (h *Handler) UnpublishArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": domain.ErrArticleInvalidID})
@@ -224,13 +224,13 @@ func (h *Handler) UnpublishArticle(ctx *gin.Context) {
 }
 // ======================== Article Archive =======================================
 func (h *Handler) ArchiveArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": domain.ErrArticleInvalidID})
@@ -259,13 +259,13 @@ func (h *Handler) ArchiveArticle(ctx *gin.Context) {
 }
 // ======================== Article Unarchive =====================================
 func (h *Handler) UnarchiveArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": domain.ErrArticleInvalidID})
@@ -298,13 +298,13 @@ func (h *Handler) UnarchiveArticle(ctx *gin.Context) {
 //===============================================================================//
 // =============================== Article GetByID ================================
 func (h *Handler) GetArticleByID(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
     articleID := ctx.Param("id")
     res, err := h.Usecase.GetArticleByID(ctx,articleID,userID)
     if err!=nil {
@@ -329,13 +329,13 @@ func (h *Handler) GetArticleByID(ctx *gin.Context) {
 }
 // =================== Article Stats of Author ====================================
 func (h *Handler) GetArticleStats(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": domain.ErrArticleInvalidID})
@@ -359,13 +359,13 @@ func (h *Handler) GetArticleStats(ctx *gin.Context) {
 }
 // =================== All Article Stats of Author ================================
 func (h *Handler) GetAllArticleStats(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 
 	stats,total, err := h.Usecase.GetAllArticleStats(ctx,userID)
 	if err != nil {
@@ -419,13 +419,13 @@ func (h *Handler) GetArticleBySlug(ctx *gin.Context) {
 //===========================================================================//
 //======================= List user articles ==================================
 func (h *Handler) ListArticlesByAuthor(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	var pagReq PaginationRequest
 	if err := ctx.ShouldBindQuery(&pagReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -466,13 +466,13 @@ func (h *Handler) ListArticlesByAuthor(ctx *gin.Context) {
 //======================= List Trending articles ==================================
 // Trending articles (last 7 days)
 func (h *Handler) GetTrendingArticles(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	var pagReq PaginationRequest
 	if err := ctx.ShouldBindQuery(&pagReq); err != nil {
         if err == domain.ErrArticleNotFound {}
@@ -510,13 +510,13 @@ func (h *Handler) GetTrendingArticles(ctx *gin.Context) {
 //======================= List New articles ==================================
 
 func (h *Handler) GetNewArticles(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	var pagReq PaginationRequest
 	if err := ctx.ShouldBindQuery(&pagReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -553,13 +553,13 @@ func (h *Handler) GetNewArticles(ctx *gin.Context) {
 //======================= List Popular articles ==================================
 
 func (h *Handler) GetPopularArticles(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+    
 	var pagReq PaginationRequest
 	if err := ctx.ShouldBindQuery(&pagReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -594,14 +594,13 @@ func (h *Handler) GetPopularArticles(ctx *gin.Context) {
 }
 //======================= List Author articles ==================================
 func (h *Handler) FilterAuthorArticles(c *gin.Context) {
-    // caller (authenticated)
-    // callerIDVal, exists := c.Get("user_id")
-    // if !exists {
-    //     c.JSON(http.StatusUnauthorized, gin.H{"error": domain.ErrUnauthorized.Error()})
-    //     return
-    // }
-    // callerID := callerIDVal.(string)
-    callerID := "1234"
+    callerIDVal, exists := c.Get("user_id")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{"error": domain.ErrUnauthorized.Error()})
+        return
+    }
+    callerID := callerIDVal.(string)
+    
 
     authorID := c.Param("author_id")
     if authorID == "" {
@@ -662,11 +661,11 @@ func (h *Handler) FilterArticles(ctx *gin.Context) {
         Filter     domain.ArticleFilter `json:"filter"`
         Pagination domain.Pagination    `json:"pagination"`
     }
-    // userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	//     ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
+    _, exists := ctx.Get("user_id")
+	if !exists {
+	    ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
 
     if err := ctx.ShouldBindJSON(&req); err != nil {
         ctx.JSON(http.StatusBadRequest, gin.H{"error": domain.ErrInvalidArticlePayload.Error()})
@@ -710,13 +709,13 @@ func (h *Handler) FilterArticles(ctx *gin.Context) {
 }
 //=========================== Search ==============================================
 func (h *Handler) SearchArticles(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
-	// 	return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+	userID := userIDVal.(string)
+    
 
 	query := strings.TrimSpace(ctx.Query("q"))
 	if query == "" {
@@ -757,12 +756,13 @@ func (h *Handler) SearchArticles(ctx *gin.Context) {
 }
 //======================== List By Tags =======================================
 func (h *Handler) ListArticlesByTags(c *gin.Context) {
-	// userIDVal, exists := c.Get("user_id")
-	// if !exists {
-	//     c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	//     return
-	// }
-	userID := "1234" // temporary until auth is implemented
+	userIDVal, exists := c.Get("user_id")
+	if !exists {
+	    c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	    return
+	}
+	userID := userIDVal.(string)
+	 // temporary until auth is implemented
 	
 	// Get tags from query params
 	tags := c.QueryArray("tags")
@@ -813,13 +813,13 @@ func (h *Handler) ListArticlesByTags(c *gin.Context) {
 //                  Trash Management (Author only)                            //
 // ===========================================================================//
 func (h *Handler) EmptyTrash(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
-	// 	return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+	userID := userIDVal.(string)
+    
 
 	if err := h.Usecase.EmptyTrash(ctx, userID); err != nil {
 		switch err {
@@ -836,13 +836,13 @@ func (h *Handler) EmptyTrash(ctx *gin.Context) {
 }
 //======================= Delete From Trash ====================================
 func (h *Handler) DeleteFromTrash(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
-	// 	return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+	userID := userIDVal.(string)
+    
     articleID := ctx.Param("id")
     if articleID == "" {
         ctx.JSON(http.StatusBadRequest, gin.H{"error": "article_id required"})
@@ -866,21 +866,20 @@ func (h *Handler) DeleteFromTrash(ctx *gin.Context) {
 //                            Admin Operations                                //
 // ===========================================================================//
 func (h *Handler) AdminListAllArticles(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
-	// 	return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+	userID := userIDVal.(string)
+    
 
-	// roleVal, exists := ctx.Get("user_role")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_role not found in context"})
-	// 	return
-	// }
-	// userRole := roleVal.(string)
-    userRole := "admin"
+	roleVal, exists := ctx.Get("user_role")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_role not found in context"})
+		return
+	}
+	userRole := roleVal.(string)
 
 	var pagReq PaginationRequest
 	if err := ctx.ShouldBindQuery(&pagReq); err != nil {
@@ -921,20 +920,19 @@ func (h *Handler) AdminListAllArticles(ctx *gin.Context) {
 }
 
 func (h *Handler) AdminHardDeleteArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
-	// 	return
-	// }
-	// userID := userIDVal.(string)
-    userID := "1234"
-	// roleVal, exists := ctx.Get("user_role")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_role not found in context"})
-	// 	return
-	// }
-	// userRole := roleVal.(string)
-    userRole := "admin"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+	userID := userIDVal.(string)
+    
+	roleVal, exists := ctx.Get("user_role")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_role not found in context"})
+		return
+	}
+	userRole := roleVal.(string)
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "article ID is required"})
@@ -957,20 +955,19 @@ func (h *Handler) AdminHardDeleteArticle(ctx *gin.Context) {
 }
 
 func (h *Handler) AdminUnpublishArticle(ctx *gin.Context) {
-	// userIDVal, exists := ctx.Get("user_id")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
-	// 	return
-	// }
-	// userID := userIDVal.(string)
-	// roleVal, exists := ctx.Get("user_role")
-	// if !exists {
-	// 	ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_role not found in context"})
-	// 	return
-	// }
-	// userRole := roleVal.(string)
-    userID := "1234"
-    userRole := "admin"
+	userIDVal, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_id not found in context"})
+		return
+	}
+	userID := userIDVal.(string)
+	roleVal, exists := ctx.Get("user_role")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "user_role not found in context"})
+		return
+	}
+	userRole := roleVal.(string)
+    
 	articleID := ctx.Param("id")
 	if articleID == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "article ID is required"})

@@ -117,8 +117,11 @@ type ArticleTimes struct {
 	PublishedAt *time.Time
 	ArchivedAt  *time.Time
 }
+
 // ===========================================================================//
-//	                      Article Filter and Pagination                       //
+//
+//	Article Filter and Pagination                       //
+//
 // ===========================================================================//
 type ArticleFilter struct {
 	// Core filters
@@ -135,6 +138,7 @@ type ArticleFilter struct {
 	PublishedAfter  *time.Time
 	PublishedBefore *time.Time
 }
+
 // Pagination controls result slicing
 type Pagination struct {
 	Page      int
@@ -142,39 +146,41 @@ type Pagination struct {
 	SortField string
 	SortOrder string
 }
+
 func (p *Pagination) ValidatePagination() {
-    // Set default page if not provided or invalid
-    if p.Page <= 0 {
-        p.Page = 1
-    }
-    // Set default page size if not provided or invalid
-    if p.PageSize <= 0 {
-        p.PageSize = 10
-    }
-    // Limit page size to maximum allowed value
-    if p.PageSize > 100 {
-        p.PageSize = 100
-    }
-    // Validate sort order
-    if p.SortOrder != "" && p.SortOrder != "asc" && p.SortOrder != "desc" {
-        p.SortOrder = "desc" // Default to descending
-    }
+	// Set default page if not provided or invalid
+	if p.Page <= 0 {
+		p.Page = 1
+	}
+	// Set default page size if not provided or invalid
+	if p.PageSize <= 0 {
+		p.PageSize = 10
+	}
+	// Limit page size to maximum allowed value
+	if p.PageSize > 100 {
+		p.PageSize = 100
+	}
+	// Validate sort order
+	if p.SortOrder != "" && p.SortOrder != "asc" && p.SortOrder != "desc" {
+		p.SortOrder = "desc" // Default to descending
+	}
 }
 
-
 // ===========================================================================//
-//	                     Usecase Interface                                    //
+//
+//	Usecase Interface                                    //
+//
 // ===========================================================================//
 type IArticleUsecase interface {
 	CreateArticle(ctx context.Context, userID string, input *Article) (string, error)
 	UpdateArticle(ctx context.Context, userID string, input *Article) error
-	DeleteArticle(ctx context.Context, articleID,userID string) error
-	RestoreArticle(ctx context.Context, userID, articleID string)  error
+	DeleteArticle(ctx context.Context, articleID, userID string) error
+	RestoreArticle(ctx context.Context, userID, articleID string) error
 
 	GetArticleByID(ctx context.Context, articleID, userID string) (*Article, error)
 	GetArticleBySlug(ctx context.Context, slug string, clientIP string) (*Article, error)
 	GetArticleStats(ctx context.Context, articleID, userID string) (*ArticleStats, error)
-	GetAllArticleStats(ctx context.Context, userID string) ([]ArticleStats,int, error)
+	GetAllArticleStats(ctx context.Context, userID string) ([]ArticleStats, int, error)
 
 	PublishArticle(ctx context.Context, articleID, userID string) (*Article, error)
 	UnpublishArticle(ctx context.Context, articleID, userID string) (*Article, error)
@@ -184,32 +190,34 @@ type IArticleUsecase interface {
 	ListArticlesByAuthor(ctx context.Context, userID, authorID string, pag Pagination) ([]Article, int, error)
 	GetTrendingArticles(ctx context.Context, userID string, pag Pagination) ([]Article, int, error)
 	GetNewArticles(ctx context.Context, userID string, pag Pagination) ([]Article, int, error)
-	GetPopularArticles(ctx context.Context, userID string, pag Pagination) ([]Article, int, error) 
+	GetPopularArticles(ctx context.Context, userID string, pag Pagination) ([]Article, int, error)
 
 	FilterAuthorArticles(ctx context.Context, callerID, authorID string, filter ArticleFilter, pag Pagination) ([]Article, int, error)
 
-	FilterArticles(ctx context.Context, filter ArticleFilter, pag Pagination) ([]Article, int, error) 
+	FilterArticles(ctx context.Context, filter ArticleFilter, pag Pagination) ([]Article, int, error)
 
 	SearchArticles(ctx context.Context, userID, query string, pag Pagination) ([]Article, int, error)
 
 	ListArticlesByTags(ctx context.Context, userID string, tags []string, pag Pagination) ([]Article, int, error)
 
 	EmptyTrash(ctx context.Context, userID string) error
-	DeleteArticleFromTrash(ctx context.Context,articleID, userID string) error
+	DeleteArticleFromTrash(ctx context.Context, articleID, userID string) error
 
 	AdminListAllArticles(ctx context.Context, userID, userRole string, pag Pagination) ([]Article, int, error)
 	AdminHardDeleteArticle(ctx context.Context, userID, userRole, articleID string) error
 
-	AdminUnpublishArticle(ctx context.Context, userID, userRole, articleID string) (*Article, error) 
+	AdminUnpublishArticle(ctx context.Context, userID, userRole, articleID string) (*Article, error)
 
 	AddClap(ctx context.Context, userID, articleID string) (ArticleStats, error)
 
 	GenerateContentForArticle(ctx context.Context, article *Article, instructions string) (*Article, error)
 	GenerateSlugForTitle(ctx context.Context, title string) (string, error)
-
 }
+
 // ===========================================================================//
-//	                     Repository Interface                                 //
+//
+//	Repository Interface                                 //
+//
 // ===========================================================================//
 type IArticleRepository interface {
 	Create(ctx context.Context, article *Article) error
@@ -220,7 +228,7 @@ type IArticleRepository interface {
 	GetByID(ctx context.Context, articleID string) (*Article, error)
 	GetBySlug(ctx context.Context, slug string) (*Article, error)
 	GetStats(ctx context.Context, articleID string) (*ArticleStats, error)
-	GetAllArticleStats(ctx context.Context, userID string) ([]ArticleStats,int, error)
+	GetAllArticleStats(ctx context.Context, userID string) ([]ArticleStats, int, error)
 
 	Publish(ctx context.Context, articleID string, publishAt time.Time) error
 	Unpublish(ctx context.Context, articleID string) error
@@ -248,8 +256,11 @@ type IArticleRepository interface {
 	IncrementView(ctx context.Context, articleID string) error
 	UpdateClapCount(ctx context.Context, articleID string, count int) error
 }
+
 // ===========================================================================//
-//	                        Article Policy Interface                          //
+//
+//	Article Policy Interface                          //
+//
 // ===========================================================================//
 type IPolicy interface {
 	UserExists(userID string) bool
@@ -258,8 +269,11 @@ type IPolicy interface {
 	CheckArticleChangesAndValid(oldArticle *Article, newArticle *Article) bool
 	IsAdmin(userID string, userRole string) bool
 }
+
 // ===========================================================================//
-//	                          Utils Interface                                 //
+//
+//	Utils Interface                                 //
+//
 // ===========================================================================//
 type IUtils interface {
 	GenerateUUID() string
@@ -267,4 +281,3 @@ type IUtils interface {
 	GenerateShortUUID() string
 	ValidateContent(blocks []ContentBlock) bool
 }
-
