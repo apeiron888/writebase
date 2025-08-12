@@ -7,7 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -15,17 +16,18 @@ import (
 	"write_base/internal/delivery/http/controller"
 	"write_base/internal/delivery/http/router"
 	"write_base/internal/domain"
+	"write_base/internal/infrastructure"
+	"write_base/internal/infrastructure/ai"
+	"write_base/internal/infrastructure/utils"
+	"write_base/internal/policy"
 	"write_base/internal/repository"
+	"write_base/internal/usecase"
+
 	usecaseai "write_base/internal/usecase/ai"
 	usecasecomment "write_base/internal/usecase/comment"
 	usecasefollow "write_base/internal/usecase/follow"
 	usecasereaction "write_base/internal/usecase/reaction"
 	usecasereport "write_base/internal/usecase/report"
-
-	"write_base/internal/infrastructure"
-	"write_base/internal/usecase"
-
-	"github.com/gin-gonic/gin"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -33,7 +35,7 @@ import (
 
 type Container struct {
 	Router *gin.Engine
-	MongoClient *mongo.Client 
+	MongoClient *mongo.Client
 }
 func SeedSuperAdmin(ctx context.Context, userRepo domain.IUserRepository, passwordService domain.IPasswordService) error {
 	// Define the super admin credentials
@@ -117,10 +119,6 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 	}
 	db := client.Database(cfg.MongodbName)
 
-	// Create performance indexes (idempotent)
-	if err := ensureIndexes(context.Background(), db); err != nil {
-		log.Printf("index creation warning: %v", err)
-	}
 	//OAUTH
 	//.............
 	GoogleOAuthConfig := &oauth2.Config{
@@ -134,38 +132,27 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		Endpoint: google.Endpoint,
 	}
 
-commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
-reactionRepo := repository.NewMongoReactionRepository(db.Collection("reactions"))
-followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
-reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
-
-// Usecases
-commentUsecase := usecasecomment.NewCommentUsecase(commentRepo)
-reactionUsecase := usecasereaction.NewReactionService(reactionRepo)
-followUsecase := usecasefollow.NewFollowService(followRepo)
-reportUsecase := usecasereport.NewReportService(reportRepo)
-aiGemini := usecaseai.NewGeminiClient(cfg.GeminiAPIKey)
-
-// Controllers
-commentController := controller.NewCommentController(commentUsecase)
-reactionController := controller.NewReactionController(reactionUsecase)
-followController := controller.NewFollowController(followUsecase)
-reportController := controller.NewReportController(reportUsecase)
-aiController := controller.NewAIController(aiGemini)
-
-
 	// Repositories
-	//.............
+	articleRepo := repository.NewArticleRepository(db, "articles")
+	tagRepo := repository.NewTagRepository(db)
+	viewRepo := repository.NewViewRepository(db)
+	clapRepo := repository.NewClapRepository(db)
+
 	userRepository := repository.NewUserRepository(db)
-	// clean up job
+
+	commentRepo := repository.NewMongoCommentRepository(db.Collection("comments"))
+	reactionRepo := repository.NewMongoReactionRepository(db.Collection("reactions"))
+	followRepo := repository.NewMongoFollowRepository(db.Collection("follows"))
+	reportRepo := repository.NewMongoReportRepository(db.Collection("reports"))
+
+	// Utils
+	utils := utils.NewUtils()
+
 	startCleanupJob(userRepository, time.Hour, 5*time.Minute)
 	// Clean up old revoked tokens (e.g., tokens revoked more than 24 hours ago)
     startRevokedTokenCleanupJob(userRepository, time.Hour, 5*time.Minute)
-	// create supper admin
-	
-	
+
 	// Auth service
-	//............
 	mailtrapService := infrastructure.NewMailtrapService(cfg.MailtrapHost, cfg.MailtrapPort, cfg.MailtrapUsername, cfg.MailtrapPassword, cfg.MailtrapFrom)
 	passwordService := infrastructure.NewPasswordService()
 	emailService :=infrastructure.NewEmailService(mailtrapService, cfg.BackendURL)
@@ -177,28 +164,55 @@ aiController := controller.NewAIController(aiGemini)
 	if err != nil {
 		log.Fatal("Failed to seed super admin:", err)
 	}
+
+	// AI
+	aiClient := ai.NewGeminiClient(cfg.GeminiAPIKey)
+	// Policy
+	policy := policy.NewArticlePolicy(utils)
+
 	// Usecases
-	//.........
+	tagUsecase := usecase.NewTagUsecase(tagRepo,utils)
+	viewUsecase := usecase.NewViewUsecase(viewRepo,utils)
+	clapUsecase := usecase.NewClapUsecase(clapRepo,utils)
+	articleUsecase := usecase.NewArticleUsecase(articleRepo,policy,utils,tagUsecase,viewUsecase,clapUsecase,aiClient)
+
 	userUsecase:= usecase.NewUserUsecase(userRepository, passwordService, tokenService, emailService)
-	
+
+	commentUsecase := usecasecomment.NewCommentUsecase(commentRepo)
+	reactionUsecase := usecasereaction.NewReactionService(reactionRepo)
+	followUsecase := usecasefollow.NewFollowService(followRepo)
+	reportUsecase := usecasereport.NewReportService(reportRepo)
+	aiGemini := usecaseai.NewGeminiClient(cfg.GeminiAPIKey)
+
 	// Handlers
-	//.........
-	 userController := controller.NewUserController(userUsecase, GoogleOAuthConfig)
+	tagHandler := controller.NewTagHandler(tagUsecase)
+	articleHandler := controller.NewArticleHandler(articleUsecase)
 
-// Router
-r := gin.Default()
-// router.RegisterArticleRouter(r,articleHandler)
-router.UserRouter(r, userController, authMiddleware)
-router.RegisterCommentRoutes(r, commentController)
-router.RegisterReactionRoutes(r, reactionController)
-router.RegisterFollowRoutes(r, followController)
-router.RegisterReportRoutes(r, reportController)
-router.RegisterAIRoutes(r, aiController)
+	userController := controller.NewUserController(userUsecase, GoogleOAuthConfig)
 
-return &Container{
-	   Router:     r,
-	   MongoClient: client,
-}, nil
+	commentController := controller.NewCommentController(commentUsecase)
+	reactionController := controller.NewReactionController(reactionUsecase)
+	followController := controller.NewFollowController(followUsecase)
+	reportController := controller.NewReportController(reportUsecase)
+	aiController := controller.NewAIController(aiGemini)
+	
+
+
+	r:=gin.Default()
+	router.RegisterArticleRouter(r,articleHandler)
+	router.RegisterTagRouter(r, tagHandler)
+
+	router.UserRouter(r, userController, authMiddleware)
+	router.RegisterCommentRoutes(r, commentController)
+	router.RegisterReactionRoutes(r, reactionController)
+	router.RegisterFollowRoutes(r, followController)
+	router.RegisterReportRoutes(r, reportController)
+	router.RegisterAIRoutes(r, aiController)
+
+	return &Container{
+		Router:     r,
+		MongoClient: client,
+	}, nil
 }
 
 // ensureIndexes creates common indexes to optimize query performance.
