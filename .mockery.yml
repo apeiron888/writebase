@@ -1,16 +1,7 @@
-all: false
-dir: './internal/mocks'
-filename: '{{.InterfaceName}}Mock.go'
-force-file-write: true
-formatter: goimports
-include-auto-generated: false
-log-level: info
-structname: '{{.Mock}}{{.InterfaceName}}'
-pkgname: 'mocks'
-recursive: false
-require-template-schema-exists: true
-template: testify
-template-schema: '{{.Template}}.schema.json'
+with-expecter: true
+dir: "./internal/mocks"
+outpkg: "mocks"
+filename: "{{.InterfaceName}}Mock.go"
 packages:
   "write_base/internal/repository":
     config:

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"time"
+
 	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -20,9 +22,10 @@ import (
 	usecasereaction "write_base/internal/usecase/reaction"
 	usecasereport "write_base/internal/usecase/report"
 
-	"github.com/gin-gonic/gin"
-	"write_base/internal/usecase"
 	"write_base/internal/infrastructure"
+	"write_base/internal/usecase"
+
+	"github.com/gin-gonic/gin"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -113,6 +116,11 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 		return nil, fmt.Errorf("MongoDB connection failed: %w", err)
 	}
 	db := client.Database(cfg.MongodbName)
+
+	// Create performance indexes (idempotent)
+	if err := ensureIndexes(context.Background(), db); err != nil {
+		log.Printf("index creation warning: %v", err)
+	}
 	//OAUTH
 	//.............
 	GoogleOAuthConfig := &oauth2.Config{
@@ -191,4 +199,46 @@ return &Container{
 	   Router:     r,
 	   MongoClient: client,
 }, nil
+}
+
+// ensureIndexes creates common indexes to optimize query performance.
+// It's safe to call multiple times; MongoDB will no-op if indexes exist.
+func ensureIndexes(ctx context.Context, db *mongo.Database) error {
+	// Comments indexes: by post, user, parent + recency; speeds list & replies
+	if _, err := db.Collection("comments").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "post_id", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("post_created_desc")},
+		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("user_created_desc")},
+		{Keys: bson.D{{Key: "parent_id", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("parent_created_desc")},
+	}); err != nil {
+		return fmt.Errorf("comments index: %w", err)
+	}
+
+	// Reactions indexes: by post+type for counts; user recency; comment reactions
+	if _, err := db.Collection("reactions").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "post_id", Value: 1}, {Key: "type", Value: 1}}, Options: options.Index().SetName("post_type")},
+		{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("user_created_desc")},
+		{Keys: bson.D{{Key: "comment_id", Value: 1}}, Options: options.Index().SetName("comment_id")},
+	}); err != nil {
+		return fmt.Errorf("reactions index: %w", err)
+	}
+
+	// Follows indexes: unique pair; supports followers/following lists
+	if _, err := db.Collection("follows").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "follower_id", Value: 1}, {Key: "followee_id", Value: 1}}, Options: options.Index().SetName("follower_followee").SetUnique(true)},
+		{Keys: bson.D{{Key: "follower_id", Value: 1}}, Options: options.Index().SetName("follower_id")},
+		{Keys: bson.D{{Key: "followee_id", Value: 1}}, Options: options.Index().SetName("followee_id")},
+	}); err != nil {
+		return fmt.Errorf("follows index: %w", err)
+	}
+
+	// Reports indexes: status recency; reporter; target composite
+	if _, err := db.Collection("reports").Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "status", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("status_created_desc")},
+		{Keys: bson.D{{Key: "reporter_id", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("reporter_created_desc")},
+		{Keys: bson.D{{Key: "target_type", Value: 1}, {Key: "target_id", Value: 1}, {Key: "created_at", Value: -1}}, Options: options.Index().SetName("target_type_id_created_desc")},
+	}); err != nil {
+		return fmt.Errorf("reports index: %w", err)
+	}
+
+	return nil
 }

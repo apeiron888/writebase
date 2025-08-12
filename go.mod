@@ -1,6 +1,8 @@
 module write_base
 
-go 1.24.4
+go 1.23.0
+
+toolchain go1.23.3
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
