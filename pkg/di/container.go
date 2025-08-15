@@ -37,6 +37,21 @@ type Container struct {
 	Router *gin.Engine
 	MongoClient *mongo.Client
 }
+func enableCORS() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+        c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+        if c.Request.Method == "OPTIONS" {
+            c.AbortWithStatus(200)
+            return
+        }
+
+        c.Next()
+    }
+}
+
 func SeedSuperAdmin(ctx context.Context, userRepo domain.IUserRepository, passwordService domain.IPasswordService) error {
 	// Define the super admin credentials
 	email := "super@admin.com"
@@ -105,6 +120,8 @@ func startRevokedTokenCleanupJob(userRepo domain.IUserRepository, interval, olde
         }
     }()
 }
+
+
 
 func NewContainer(cfg *config.Config) (*Container, error) {
 	// MongoDB client
@@ -199,6 +216,7 @@ func NewContainer(cfg *config.Config) (*Container, error) {
 
 
 	r:=gin.Default()
+	r.Use(enableCORS())
 	router.RegisterArticleRouter(r,articleHandler)
 	router.RegisterTagRouter(r, tagHandler)
 
