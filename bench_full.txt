@@ -1,0 +1,24 @@
+goos: windows
+goarch: amd64
+pkg: write_base/internal/repository
+cpu: 11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50GHz
+BenchmarkRepo_ListByAuthor-8           	    5988	   2172728 ns/op	        20.00 docs/op	   50427 B/op	     690 allocs/op
+BenchmarkRepo_ListByAuthor-8           	    9741	   2087185 ns/op	        20.00 docs/op	   50425 B/op	     690 allocs/op
+BenchmarkRepo_ListByAuthor-8           	    6206	   1852547 ns/op	        20.00 docs/op	   50422 B/op	     690 allocs/op
+BenchmarkRepo_Filter_TagsPublished-8   	    2599	   4309754 ns/op	        20.00 docs/op	   52513 B/op	     712 allocs/op
+BenchmarkRepo_Filter_TagsPublished-8   	    2473	   4629971 ns/op	        20.00 docs/op	   52504 B/op	     712 allocs/op
+BenchmarkRepo_Filter_TagsPublished-8   	    2215	   4824006 ns/op	        20.00 docs/op	   52515 B/op	     712 allocs/op
+BenchmarkRepo_Search_TitleRegex-8      	     100	 123439346 ns/op	        20.00 docs/op	   53009 B/op	     745 allocs/op
+BenchmarkRepo_Search_TitleRegex-8      	     100	 112136409 ns/op	        20.00 docs/op	   52948 B/op	     745 allocs/op
+BenchmarkRepo_Search_TitleRegex-8      	     100	 102067845 ns/op	        20.00 docs/op	   53018 B/op	     745 allocs/op
+BenchmarkRepo_FindTrending-8           	    5040	   2854202 ns/op	        20.00 docs/op	   51248 B/op	     701 allocs/op
+BenchmarkRepo_FindTrending-8           	    5264	   3511384 ns/op	        20.00 docs/op	   51254 B/op	     701 allocs/op
+BenchmarkRepo_FindTrending-8           	    3949	   2704145 ns/op	        20.00 docs/op	   51253 B/op	     701 allocs/op
+BenchmarkRepo_FindPopular-8            	    2076	   4970327 ns/op	        20.00 docs/op	   50161 B/op	     684 allocs/op
+BenchmarkRepo_FindPopular-8            	    2167	   5430445 ns/op	        20.00 docs/op	   50154 B/op	     684 allocs/op
+BenchmarkRepo_FindPopular-8            	    2455	   6905250 ns/op	        20.00 docs/op	   50165 B/op	     684 allocs/op
+BenchmarkRepo_Create-8                 	   60630	    216229 ns/op	    6498 B/op	      83 allocs/op
+BenchmarkRepo_Create-8                 	   52266	    264583 ns/op	    6496 B/op	      83 allocs/op
+BenchmarkRepo_Create-8                 	   54985	    255683 ns/op	    6498 B/op	      83 allocs/op
+PASS
+ok  	write_base/internal/repository	309.450s

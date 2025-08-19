@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"time"
 	"context"
+	"time"
 	"write_base/internal/domain"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -17,7 +17,8 @@ type ArticleRepository struct {
 func NewArticleRepository(db *mongo.Database, collection string) domain.IArticleRepository {
 	return &ArticleRepository{Collection: db.Collection(collection)}
 }
-//============================= Generals ============================================
+
+// ============================= Generals ============================================
 func buildArticleFilterQuery(authorID string, filter domain.ArticleFilter) bson.M {
 	q := bson.M{}
 
@@ -83,54 +84,61 @@ func buildArticleFilterQuery(authorID string, filter domain.ArticleFilter) bson.
 	return q
 }
 
-
-//===============================================================================//
-//                                CRUD                                           //
-//===============================================================================//
+// ===============================================================================//
+//
+//	CRUD                                           //
+//
+// ===============================================================================//
 // =============================== Article Create ================================
 func (ar *ArticleRepository) Create(ctx context.Context, article *domain.Article) error {
 	articleDTO := ToArticleDTO(article)
 	if articleDTO == nil {
-		return domain.ErrInternalServer 
+		return domain.ErrInternalServer
 	}
 	if _, err := ar.Collection.InsertOne(ctx, articleDTO); err != nil {
 		return domain.ErrInternalServer
 	}
 	return nil
 }
+
 // =============================== Article Update ================================
 func (ar *ArticleRepository) Update(ctx context.Context, article *domain.Article) error {
 	articleDTO := ToArticleDTO(article)
 	if articleDTO == nil {
 		return domain.ErrInternalServer
 	}
-	filter := bson.M{"_id":articleDTO.ID}
-	if _, err := ar.Collection.UpdateOne(ctx,filter,bson.M{"$set": articleDTO}); err != nil {
+	filter := bson.M{"_id": articleDTO.ID}
+	if _, err := ar.Collection.UpdateOne(ctx, filter, bson.M{"$set": articleDTO}); err != nil {
 		return domain.ErrInternalServer
 	}
 	return nil
 }
+
 // =============================== Article Delete ================================
 func (ar *ArticleRepository) Delete(ctx context.Context, articleID string) error {
-	filter := bson.M{"_id":articleID}
+	filter := bson.M{"_id": articleID}
 	update := bson.M{"$set": bson.M{"status": string(domain.StatusDeleted)}}
-	if _, err := ar.Collection.UpdateOne(ctx,filter,update); err != nil {
+	if _, err := ar.Collection.UpdateOne(ctx, filter, update); err != nil {
 		return domain.ErrInternalServer
 	}
 	return nil
 }
+
 // =============================== Article Restore ================================
 func (ar *ArticleRepository) Restore(ctx context.Context, articleID string) error {
-	filter := bson.M{"_id":articleID}
+	filter := bson.M{"_id": articleID}
 	update := bson.M{"$set": bson.M{"status": string(domain.StatusDraft)}}
-	if _, err := ar.Collection.UpdateOne(ctx,filter,update); err != nil {
+	if _, err := ar.Collection.UpdateOne(ctx, filter, update); err != nil {
 		return domain.ErrInternalServer
 	}
 	return nil
 }
-//===============================================================================//
-//                   Article State Management                                    //
-//===============================================================================//
+
+// ===============================================================================//
+//
+//	Article State Management                                    //
+//
+// ===============================================================================//
 // ======================== Article Publish =======================================
 func (ar *ArticleRepository) Publish(ctx context.Context, articleID string, publishAt time.Time) error {
 	_, err := ar.Collection.UpdateOne(ctx, bson.M{"_id": articleID}, bson.M{"$set": bson.M{"status": string(domain.StatusPublished), "timestamps.published_at": publishAt}})
@@ -139,6 +147,7 @@ func (ar *ArticleRepository) Publish(ctx context.Context, articleID string, publ
 	}
 	return nil
 }
+
 // ======================== Article Unpublish =====================================
 func (r *ArticleRepository) Unpublish(ctx context.Context, articleID string) error {
 	_, err := r.Collection.UpdateOne(ctx, bson.M{"_id": articleID}, bson.M{"$set": bson.M{"status": string(domain.StatusDraft)}})
@@ -147,6 +156,7 @@ func (r *ArticleRepository) Unpublish(ctx context.Context, articleID string) err
 	}
 	return nil
 }
+
 // ======================== Article Archive =======================================
 func (r *ArticleRepository) Archive(ctx context.Context, articleID string, archiveAt time.Time) error {
 	_, err := r.Collection.UpdateOne(ctx, bson.M{"_id": articleID}, bson.M{"$set": bson.M{"status": string(domain.StatusArchived), "timestamps.archived_at": archiveAt}})
@@ -155,6 +165,7 @@ func (r *ArticleRepository) Archive(ctx context.Context, articleID string, archi
 	}
 	return nil
 }
+
 // ======================== Article Unarchive =====================================
 func (r *ArticleRepository) Unarchive(ctx context.Context, articleID string) error {
 	_, err := r.Collection.UpdateOne(ctx, bson.M{"_id": articleID}, bson.M{"$set": bson.M{"status": string(domain.StatusDraft)}})
@@ -163,9 +174,12 @@ func (r *ArticleRepository) Unarchive(ctx context.Context, articleID string) err
 	}
 	return nil
 }
-//===============================================================================//
-//                               Retrieve                                        //
-//===============================================================================//
+
+// ===============================================================================//
+//
+//	Retrieve                                        //
+//
+// ===============================================================================//
 // =============================== Article GetByID ================================
 func (ar *ArticleRepository) GetByID(ctx context.Context, articleID string) (*domain.Article, error) {
 	var articleDTO ArticleDTO
@@ -178,35 +192,41 @@ func (ar *ArticleRepository) GetByID(ctx context.Context, articleID string) (*do
 	}
 	return FromArticleDTO(&articleDTO), nil
 }
+
 // =============================== Article Stats ================================
 func (ar *ArticleRepository) GetStats(ctx context.Context, articleID string) (*domain.ArticleStats, error) {
-	opts :=  options.FindOne().SetProjection(bson.M{"stats": 1})
-	var articleStatsDTO ArticleStatsDTO
-	if err := ar.Collection.FindOne(ctx, bson.M{"_id":articleID,"status":domain.StatusPublished},opts).Decode(&articleStatsDTO);err!=nil {
-				if err == mongo.ErrNoDocuments {
+	opts := options.FindOne().SetProjection(bson.M{"stats": 1})
+	var wrapped struct {
+		Stats ArticleStatsDTO `bson:"stats"`
+	}
+	if err := ar.Collection.FindOne(ctx, bson.M{"_id": articleID, "status": string(domain.StatusPublished)}, opts).Decode(&wrapped); err != nil {
+		if err == mongo.ErrNoDocuments {
 			return nil, domain.ErrArticleNotFound
 		}
 		return nil, err
 	}
-    stats := FromArticleStatsDTO(articleStatsDTO)
-    return &stats, nil
+	stats := FromArticleStatsDTO(wrapped.Stats)
+	return &stats, nil
 }
+
 // =================== All Article Stats of Author ================================
-func (ar *ArticleRepository) GetAllArticleStats(ctx context.Context, userID string) ([]domain.ArticleStats,int, error) {
-	opts :=  options.Find().SetProjection(bson.M{"stats": 1})
-	filter := bson.M{"author_id":userID,"status":domain.StatusPublished}
+func (ar *ArticleRepository) GetAllArticleStats(ctx context.Context, userID string) ([]domain.ArticleStats, int, error) {
+	opts := options.Find().SetProjection(bson.M{"stats": 1})
+	filter := bson.M{"author_id": userID, "status": string(domain.StatusPublished)}
 	articlestats := []domain.ArticleStats{}
-	cursor,err := ar.Collection.Find(ctx,filter,opts)
+	cursor, err := ar.Collection.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, 0, err
 	}
 	defer cursor.Close(ctx)
 	for cursor.Next(ctx) {
-		var articleStatsDTO ArticleStatsDTO
-		if err := cursor.Decode(&articleStatsDTO); err!=nil {
-			return nil,0,err
+		var wrapped struct {
+			Stats ArticleStatsDTO `bson:"stats"`
 		}
-		stats := FromArticleStatsDTO(articleStatsDTO)
+		if err := cursor.Decode(&wrapped); err != nil {
+			return nil, 0, err
+		}
+		stats := FromArticleStatsDTO(wrapped.Stats)
 		articlestats = append(articlestats, stats)
 	}
 	if err := cursor.Err(); err != nil {
@@ -217,10 +237,11 @@ func (ar *ArticleRepository) GetAllArticleStats(ctx context.Context, userID stri
 		return nil, 0, err
 	}
 	if total == 0 {
-    return nil, 0, domain.ErrArticleNotFound
+		return nil, 0, domain.ErrArticleNotFound
 	}
 	return articlestats, int(total), nil
 }
+
 // ========================== Article Get By Slug ==================================
 func (ar *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*domain.Article, error) {
 	var articleDTO ArticleDTO
@@ -234,21 +255,23 @@ func (ar *ArticleRepository) GetBySlug(ctx context.Context, slug string) (*domai
 	return FromArticleDTO(&articleDTO), nil
 }
 
-//===========================================================================//
-//                           Article Lists                                   //
-//===========================================================================//
-//======================= List user articles ==================================
+// ===========================================================================//
+//
+//	Article Lists                                   //
+//
+// ===========================================================================//
+// ======================= List user articles ==================================
 func (ar *ArticleRepository) ListByAuthor(ctx context.Context, authorID string, pag domain.Pagination) ([]domain.Article, int, error) {
 	var articles []domain.Article
-	
+
 	// Build query
 	query := bson.M{"author_id": authorID, "status": domain.StatusPublished}
-	
+
 	// Build options with pagination and sorting
 	opts := options.Find().
 		SetSkip(int64((pag.Page - 1) * pag.PageSize)).
 		SetLimit(int64(pag.PageSize))
-	
+
 	// Add sorting if specified
 	if pag.SortField != "" {
 		sortOrder := 1
@@ -259,7 +282,7 @@ func (ar *ArticleRepository) ListByAuthor(ctx context.Context, authorID string, 
 	} else {
 		opts = opts.SetSort(bson.D{{Key: "timestamps.created_at", Value: -1}})
 	}
-	
+
 	cursor, err := ar.Collection.Find(ctx, query, opts)
 	if err != nil {
 		return nil, 0, err
@@ -284,13 +307,14 @@ func (ar *ArticleRepository) ListByAuthor(ctx context.Context, authorID string, 
 		return nil, 0, err
 	}
 
-	if total<=0 {
+	if total <= 0 {
 		return nil, 0, domain.ErrArticleNotFound
 	}
 
 	return articles, int(total), nil
 }
-//======================= List Trending articles ==================================
+
+// ======================= List Trending articles ==================================
 func (ar *ArticleRepository) FindTrending(ctx context.Context, windowDays int, pag domain.Pagination) ([]domain.Article, int, error) {
 	var articles []domain.Article
 	windowAgo := time.Now().AddDate(0, 0, -windowDays)
@@ -298,13 +322,13 @@ func (ar *ArticleRepository) FindTrending(ctx context.Context, windowDays int, p
 		"status":                  string(domain.StatusPublished),
 		"timestamps.published_at": bson.M{"$gte": windowAgo},
 	}
-	
+
 	// Build options with pagination and sorting
 	opts := options.Find().
 		SetSkip(int64((pag.Page - 1) * pag.PageSize)).
 		SetLimit(int64(pag.PageSize)).
 		SetSort(bson.D{{Key: "stats.view_count", Value: -1}})
-	
+
 	if pag.SortField != "" {
 		sortOrder := 1 // ascending by default
 		if pag.SortOrder == "desc" {
@@ -336,74 +360,74 @@ func (ar *ArticleRepository) FindTrending(ctx context.Context, windowDays int, p
 	if err != nil {
 		return nil, 0, err
 	}
-	if total<=0{
-		return nil,0,domain.ErrArticleNotFound
+	if total <= 0 {
+		return nil, 0, domain.ErrArticleNotFound
 	}
 
 	return articles, int(total), nil
 }
-//======================= List New articles =======================================
+
+// ======================= List New articles =======================================
 func (ar *ArticleRepository) FindNewArticles(ctx context.Context, pag domain.Pagination) ([]domain.Article, int, error) {
-    var articles []domain.Article
+	var articles []domain.Article
 
-    filter := bson.M{
-        "status": domain.StatusPublished,
-    }
-
-    opts := options.Find().
-        SetSkip(int64((pag.Page - 1) * pag.PageSize)).
-        SetLimit(int64(pag.PageSize)).
-        SetSort(bson.D{{Key: "timestamps.published_at", Value: -1}})
-
-    if pag.SortField != "" {
-        sortOrder := 1
-        if pag.SortOrder == "desc" {
-            sortOrder = -1
-        }
-        opts = opts.SetSort(bson.D{{Key: pag.SortField, Value: sortOrder}})
-    }
-
-    cursor, err := ar.Collection.Find(ctx, filter, opts)
-    if err != nil {
-        return nil, 0, err
-    }
-    defer cursor.Close(ctx)
-
-    for cursor.Next(ctx) {
-        var articleDTO ArticleListDTO
-        if err := cursor.Decode(&articleDTO); err != nil {
-            return nil, 0, err
-        }
-        article := FromArticleListDTO(&articleDTO)
-        articles = append(articles, *article)
-    }
-
-    total, err := ar.Collection.CountDocuments(ctx, filter)
-    if err != nil {
-        return nil, 0, err
-    }
-	if total<=0{
-		return nil,0,domain.ErrArticleNotFound
+	filter := bson.M{
+		"status": domain.StatusPublished,
 	}
 
-    return articles, int(total), nil
-}
+	opts := options.Find().
+		SetSkip(int64((pag.Page - 1) * pag.PageSize)).
+		SetLimit(int64(pag.PageSize)).
+		SetSort(bson.D{{Key: "timestamps.published_at", Value: -1}})
 
+	if pag.SortField != "" {
+		sortOrder := 1
+		if pag.SortOrder == "desc" {
+			sortOrder = -1
+		}
+		opts = opts.SetSort(bson.D{{Key: pag.SortField, Value: sortOrder}})
+	}
+
+	cursor, err := ar.Collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var articleDTO ArticleListDTO
+		if err := cursor.Decode(&articleDTO); err != nil {
+			return nil, 0, err
+		}
+		article := FromArticleListDTO(&articleDTO)
+		articles = append(articles, *article)
+	}
+
+	total, err := ar.Collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if total <= 0 {
+		return nil, 0, domain.ErrArticleNotFound
+	}
+
+	return articles, int(total), nil
+}
 
 //======================= List Popular articles ===================================
 
 func (ar *ArticleRepository) FindPopularArticles(ctx context.Context, pag domain.Pagination) ([]domain.Article, int, error) {
-    var articles []domain.Article
+	var articles []domain.Article
 
-    filter := bson.M{
-        "status": domain.StatusPublished,
-    }
+	filter := bson.M{
+		"status": domain.StatusPublished,
+	}
 
-    opts := options.Find().
+	opts := options.Find().
 		SetSkip(int64((pag.Page - 1) * pag.PageSize)).
 		SetLimit(int64(pag.PageSize)).
-        SetSort(bson.D{{Key: "stats.views_total", Value: -1}})
-	
+		SetSort(bson.D{{Key: "stats.view_count", Value: -1}})
+
 	if pag.SortField != "" {
 		sortOrder := 1 // ascending by default
 		if pag.SortOrder == "desc" {
@@ -412,34 +436,33 @@ func (ar *ArticleRepository) FindPopularArticles(ctx context.Context, pag domain
 		opts = opts.SetSort(bson.D{{Key: pag.SortField, Value: sortOrder}})
 	}
 
-    cursor, err := ar.Collection.Find(ctx, filter, opts)
-    if err != nil {
-        return nil, 0, err
-    }
-    defer cursor.Close(ctx)
+	cursor, err := ar.Collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
 
-    for cursor.Next(ctx) {
-        var articleDTO ArticleListDTO
-        if err := cursor.Decode(&articleDTO); err != nil {
-            return nil, 0,  ErrArticleToDTO
-        }
-        article := FromArticleListDTO(&articleDTO)
-        articles = append(articles, *article)
-    }
-
-    total, err := ar.Collection.CountDocuments(ctx, filter)
-    if err != nil {
-        return nil, 0, err
-    }
-	if total<=0{
-		return nil,0,domain.ErrArticleNotFound
+	for cursor.Next(ctx) {
+		var articleDTO ArticleListDTO
+		if err := cursor.Decode(&articleDTO); err != nil {
+			return nil, 0, ErrArticleToDTO
+		}
+		article := FromArticleListDTO(&articleDTO)
+		articles = append(articles, *article)
 	}
 
-    return articles, int(total), nil
+	total, err := ar.Collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if total <= 0 {
+		return nil, 0, domain.ErrArticleNotFound
+	}
+
+	return articles, int(total), nil
 }
 
-
-//======================== Filter Author Repository =================================================
+// ======================== Filter Author Repository =================================================
 func (ar *ArticleRepository) FilterAuthorArticles(ctx context.Context, authorID string, filter domain.ArticleFilter, pag domain.Pagination) ([]domain.Article, int, error) {
 	// Defensive pagination defaults
 	if pag.Page < 1 {
@@ -501,7 +524,8 @@ func (ar *ArticleRepository) FilterAuthorArticles(ctx context.Context, authorID 
 
 	return articles, int(total), nil
 }
-//======================== Filter Repository =================================================
+
+// ======================== Filter Repository =================================================
 func (ar *ArticleRepository) Filter(ctx context.Context, filter domain.ArticleFilter, pag domain.Pagination) ([]domain.Article, int, error) {
 	// Defensive pagination defaults
 	if pag.Page < 1 {
@@ -564,62 +588,61 @@ func (ar *ArticleRepository) Filter(ctx context.Context, filter domain.ArticleFi
 
 	return articles, int(total), nil
 }
-//=========================== Search ==============================================
+
+// =========================== Search ==============================================
 func (ar *ArticleRepository) Search(ctx context.Context, query string, pag domain.Pagination) ([]domain.Article, int, error) {
-    articles := []domain.Article{}
+	// Use MongoDB native text search. Requires a text index on title/excerpt.
+	filter := bson.M{
+		"$text":  bson.M{"$search": query},
+		"status": string(domain.StatusPublished),
+	}
 
-    filter := bson.M{
-        "$or": []bson.M{
-            {"title": bson.M{"$regex": query, "$options": "i"}},
-            {"content": bson.M{"$regex": query, "$options": "i"}},
-        },
-    }
+	opts := options.Find().
+		SetSkip(int64((pag.Page - 1) * pag.PageSize)).
+		SetLimit(int64(pag.PageSize)).
+		SetProjection(bson.M{"score": bson.M{"$meta": "textScore"}})
 
-    opts := options.Find().
-        SetSkip(int64((pag.Page - 1) * pag.PageSize)).
-        SetLimit(int64(pag.PageSize))
+	if pag.SortField == "" {
+		// sort by text score by default
+		opts = opts.SetSort(bson.D{{Key: "score", Value: bson.M{"$meta": "textScore"}}})
+	} else {
+		sortOrder := 1
+		if pag.SortOrder == "desc" {
+			sortOrder = -1
+		}
+		opts = opts.SetSort(bson.D{{Key: pag.SortField, Value: sortOrder}})
+	}
 
-    // Add sorting if specified
-    if pag.SortField != "" {
-        sortOrder := 1
-        if pag.SortOrder == "desc" {
-            sortOrder = -1
-        }
-        opts = opts.SetSort(bson.D{{Key: pag.SortField, Value: sortOrder}})
-    } else {
-        // Default sort by title ascending (or any default field)
-        opts = opts.SetSort(bson.D{{Key: "title", Value: 1}})
-    }
+	cursor, err := ar.Collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(ctx)
 
-    cursor, err := ar.Collection.Find(ctx, filter, opts)
-    if err != nil {
-        return nil, 0, err
-    }
-    defer cursor.Close(ctx)
+	var articles []domain.Article
+	for cursor.Next(ctx) {
+		var articleDTO ArticleListDTO
+		if err := cursor.Decode(&articleDTO); err != nil {
+			return nil, 0, err
+		}
+		articles = append(articles, *FromArticleListDTO(&articleDTO))
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, 0, err
+	}
 
-    for cursor.Next(ctx) {
-        var articleDTO ArticleListDTO
-        if err := cursor.Decode(&articleDTO); err != nil {
-            return nil, 0, err
-        }
-        article := FromArticleListDTO(&articleDTO)
-        articles = append(articles, *article)
-    }
-    if err := cursor.Err(); err != nil {
-        return nil, 0, err
-    }
+	total, err := ar.Collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+	if total == 0 {
+		return nil, 0, domain.ErrArticleNotFound
+	}
 
-    total, err := ar.Collection.CountDocuments(ctx, filter)
-    if err != nil {
-        return nil, 0, err
-    }
-    if total == 0 {
-        return nil, 0, domain.ErrArticleNotFound
-    }
-
-    return articles, int(total), nil
+	return articles, int(total), nil
 }
-//======================== List By Tags =======================================
+
+// ======================== List By Tags =======================================
 func (r *ArticleRepository) ListByTags(ctx context.Context, tags []string, pag domain.Pagination) ([]domain.Article, int, error) {
 	query := bson.M{
 		"tags":   bson.M{"$in": tags},
@@ -653,8 +676,11 @@ func (r *ArticleRepository) ListByTags(ctx context.Context, tags []string, pag d
 
 	return articles, int(total), nil
 }
+
 // ===========================================================================//
-//	                           Trash Management                               //
+//
+//	Trash Management                               //
+//
 // ===========================================================================//
 func (r *ArticleRepository) EmptyTrash(ctx context.Context, userID string) error {
 	res, err := r.Collection.DeleteMany(ctx, bson.M{"status": string(domain.StatusDeleted), "author_id": userID})
@@ -666,9 +692,10 @@ func (r *ArticleRepository) EmptyTrash(ctx context.Context, userID string) error
 	}
 	return nil
 }
-//=========================== Delete Article From Trash =========================
+
+// =========================== Delete Article From Trash =========================
 func (r *ArticleRepository) DeleteFromTrash(ctx context.Context, articleID, userID string) error {
-	res, err := r.Collection.DeleteMany(ctx, bson.M{"_id":articleID, "status": string(domain.StatusDeleted), "author_id": userID})
+	res, err := r.Collection.DeleteMany(ctx, bson.M{"_id": articleID, "status": string(domain.StatusDeleted), "author_id": userID})
 	if err != nil {
 		return err
 	}
@@ -679,16 +706,18 @@ func (r *ArticleRepository) DeleteFromTrash(ctx context.Context, articleID, user
 }
 
 // ===========================================================================//
-//                            Admin Operations                                //
+//
+//	Admin Operations                                //
+//
 // ===========================================================================//
 func (r *ArticleRepository) AdminListAllArticles(ctx context.Context, pag domain.Pagination) ([]domain.Article, int, error) {
 	articles := []domain.Article{}
-	
+
 	// Build options with pagination and sorting
 	opts := options.Find().
 		SetSkip(int64((pag.Page - 1) * pag.PageSize)).
 		SetLimit(int64(pag.PageSize))
-	
+
 	// Add sorting if specified
 	if pag.SortField != "" {
 		sortOrder := 1 // ascending by default
@@ -700,7 +729,7 @@ func (r *ArticleRepository) AdminListAllArticles(ctx context.Context, pag domain
 		// Default sorting by created_at descending
 		opts = opts.SetSort(bson.D{{Key: "timestamps.created_at", Value: -1}})
 	}
-	
+
 	cursor, err := r.Collection.Find(ctx, bson.M{}, opts)
 	if err != nil {
 		return nil, 0, err
@@ -723,7 +752,8 @@ func (r *ArticleRepository) AdminListAllArticles(ctx context.Context, pag domain
 	}
 	return articles, int(total), nil
 }
-//================================ Hard Delete (Admin) ====================================
+
+// ================================ Hard Delete (Admin) ====================================
 func (r *ArticleRepository) HardDelete(ctx context.Context, articleID string) error {
 	_, err := r.Collection.DeleteOne(ctx, bson.M{"_id": articleID})
 	if err != nil {
@@ -732,19 +762,18 @@ func (r *ArticleRepository) HardDelete(ctx context.Context, articleID string) er
 	return nil
 }
 
-
-//================================ Increment View ===========================================
+// ================================ Increment View ===========================================
 func (r *ArticleRepository) IncrementView(ctx context.Context, articleID string) error {
-	_, err := r.Collection.UpdateOne(ctx, 
-		bson.M{"_id": articleID}, 
+	_, err := r.Collection.UpdateOne(ctx,
+		bson.M{"_id": articleID},
 		bson.M{"$inc": bson.M{"stats.view_count": 1}})
 	return err
 }
 
 // Add this method to ArticleRepository
 func (r *ArticleRepository) UpdateClapCount(ctx context.Context, articleID string, count int) error {
-	_, err := r.Collection.UpdateOne(ctx, 
-		bson.M{"_id": articleID}, 
+	_, err := r.Collection.UpdateOne(ctx,
+		bson.M{"_id": articleID},
 		bson.M{"$set": bson.M{"stats.clap_count": count}})
 	return err
 }

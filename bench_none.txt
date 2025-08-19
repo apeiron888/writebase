@@ -1,0 +1,25 @@
+goos: windows
+goarch: amd64
+pkg: write_base/internal/repository
+cpu: 11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50GHz
+BenchmarkRepo_ListByAuthor-8           	     600	  22574504 ns/op	        20.00 docs/op	   50499 B/op	     690 allocs/op
+BenchmarkRepo_ListByAuthor-8           	     518	  19768869 ns/op	        20.00 docs/op	   50459 B/op	     690 allocs/op
+BenchmarkRepo_ListByAuthor-8           	     613	  19624515 ns/op	        20.00 docs/op	   50456 B/op	     690 allocs/op
+BenchmarkRepo_Filter_TagsPublished-8   	     423	  28164689 ns/op	        20.00 docs/op	   52575 B/op	     712 allocs/op
+BenchmarkRepo_Filter_TagsPublished-8   	     420	  27371433 ns/op	        20.00 docs/op	   52553 B/op	     712 allocs/op
+BenchmarkRepo_Filter_TagsPublished-8   	     435	  28369018 ns/op	        20.00 docs/op	   52554 B/op	     712 allocs/op
+--- FAIL: BenchmarkRepo_Search_TitleRegex
+    article_repository_benchmark_test.go:230: Search error: (IndexNotFound) text index required for $text query
+BenchmarkRepo_FindTrending-8           	     426	  26449889 ns/op	        20.00 docs/op	   51327 B/op	     701 allocs/op
+BenchmarkRepo_FindTrending-8           	     427	  25901260 ns/op	        20.00 docs/op	   51300 B/op	     701 allocs/op
+BenchmarkRepo_FindTrending-8           	     447	  27377245 ns/op	        20.00 docs/op	   51294 B/op	     701 allocs/op
+BenchmarkRepo_FindPopular-8            	     565	  22488835 ns/op	        20.00 docs/op	   50183 B/op	     684 allocs/op
+BenchmarkRepo_FindPopular-8            	     541	  22776442 ns/op	        20.00 docs/op	   50205 B/op	     684 allocs/op
+BenchmarkRepo_FindPopular-8            	     542	  22911495 ns/op	        20.00 docs/op	   50209 B/op	     684 allocs/op
+BenchmarkRepo_Create-8                 	   88482	    124042 ns/op	    6499 B/op	      83 allocs/op
+BenchmarkRepo_Create-8                 	  104290	    122965 ns/op	    6498 B/op	      83 allocs/op
+BenchmarkRepo_Create-8                 	   98955	    122522 ns/op	    6498 B/op	      83 allocs/op
+FAIL
+exit status 1
+FAIL	write_base/internal/repository	230.223s
+FAIL

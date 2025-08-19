@@ -15,7 +15,7 @@ import (
 )
 
 type UserController struct {
-	userUsercase domain.IUserUsecase
+	userUsercase      domain.IUserUsecase
 	GoogleOAuthConfig *oauth2.Config
 }
 
@@ -113,14 +113,17 @@ func (uc *UserController) GoogleCallback(c *gin.Context) {
 	stateFromQurey := c.Query("state")
 	if stateFromQurey == "" {
 		c.IndentedJSON(http.StatusBadRequest, domain.ErrMissingState)
+		return
 	}
 	cookie, err := c.Request.Cookie("oauthStateToken")
 	if err != nil {
 		c.IndentedJSON(http.StatusBadRequest, domain.ErrMissingOAuthStateToken)
+		return
 	}
 	stateFromcookie := cookie.Value
 	if stateFromQurey != stateFromcookie {
 		c.IndentedJSON(http.StatusBadRequest, domain.ErrMissingOrExpiredStateCookie)
+		return
 	}
 	code := c.Query("code")
 	if code == "" {
@@ -306,52 +309,53 @@ func (uc *UserController) ChangeMyPassword(c *gin.Context) {
 
 }
 func (uc *UserController) UpdateMyUsername(c *gin.Context) {
-    ctx := c.Request.Context()
-    userId, ok := c.Get("user_id")
-    if !ok {
-        c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
-        return
-    }
-    var req UpdateUsername
-    if err := c.ShouldBindJSON(&req); err != nil || req.Username == "" {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid or missing username"})
-        return
-    }
-    updateInfo := &domain.UpdateAccountInput{
-        UserID:   userId.(string),
-        Username: req.Username,
-    }
-    err := uc.userUsercase.UpdateUsername(ctx, updateInfo)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "Username updated"})
+	ctx := c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
+		return
+	}
+	var req UpdateUsername
+	if err := c.ShouldBindJSON(&req); err != nil || req.Username == "" {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid or missing username"})
+		return
+	}
+	updateInfo := &domain.UpdateAccountInput{
+		UserID:   userId.(string),
+		Username: req.Username,
+	}
+	err := uc.userUsercase.UpdateUsername(ctx, updateInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Username updated"})
 }
 
 func (uc *UserController) UpdateMyEmail(c *gin.Context) {
-    ctx := c.Request.Context()
-    userId, ok := c.Get("user_id")
-    if !ok {
-        c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
-        return
-    }
-    var req UpdateEmail
-    if err := c.ShouldBindJSON(&req); err != nil{
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid or missing email"})
-        return
-    }
-    updateInfo := &domain.UpdateAccountInput{
-        UserID: userId.(string),
-        Email:  req.Email,
-    }
-    err := uc.userUsercase.UpdateEmail(ctx, updateInfo)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "Email update requested. Check your inbox for verification."})
+	ctx := c.Request.Context()
+	userId, ok := c.Get("user_id")
+	if !ok {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{"message": domain.ErrUserIDNotFound})
+		return
+	}
+	var req UpdateEmail
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid or missing email"})
+		return
+	}
+	updateInfo := &domain.UpdateAccountInput{
+		UserID: userId.(string),
+		Email:  req.Email,
+	}
+	err := uc.userUsercase.UpdateEmail(ctx, updateInfo)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "Email update requested. Check your inbox for verification."})
 }
+
 // handler/user_handler.go
 func (uc *UserController) VerifyEmailUpdateHandler(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -370,62 +374,61 @@ func (uc *UserController) VerifyEmailUpdateHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Email successfully updated!"})
 }
 
-
 // //////////............Admin........////////////
 func (uc *UserController) DemoteToUser(c *gin.Context) {
-    ctx := c.Request.Context()
-    userID := c.Param("id")
-    if userID == "" {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
-        return
-    }
-    err := uc.userUsercase.DemoteToUser(ctx, userID)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User demoted to user"})
+	ctx := c.Request.Context()
+	userID := c.Param("id")
+	if userID == "" {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
+		return
+	}
+	err := uc.userUsercase.DemoteToUser(ctx, userID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User demoted to user"})
 }
 func (uc *UserController) PromoteToAdmin(c *gin.Context) {
-    ctx := c.Request.Context()
-    userID := c.Param("id")
-    if userID == "" {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
-        return
-    }
-    err := uc.userUsercase.PromoteToAdmin(ctx, userID)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User promoted to admin"})
+	ctx := c.Request.Context()
+	userID := c.Param("id")
+	if userID == "" {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
+		return
+	}
+	err := uc.userUsercase.PromoteToAdmin(ctx, userID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User promoted to admin"})
 }
 func (uc *UserController) DisableUser(c *gin.Context) {
-    ctx := c.Request.Context()
-    userID := c.Param("id")
-    if userID == "" {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
-        return
-    }
-    err := uc.userUsercase.DisableUser(ctx, userID)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User disabled"})
+	ctx := c.Request.Context()
+	userID := c.Param("id")
+	if userID == "" {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
+		return
+	}
+	err := uc.userUsercase.DisableUser(ctx, userID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User disabled"})
 }
 
 func (uc *UserController) EnableUser(c *gin.Context) {
-    ctx := c.Request.Context()
-    userID := c.Param("id")
-    if userID == "" {
-        c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
-        return
-    }
-    err := uc.userUsercase.EnableUser(ctx, userID)
-    if err != nil {
-        c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-        return
-    }
-    c.IndentedJSON(http.StatusOK, gin.H{"message": "User enabled"})
+	ctx := c.Request.Context()
+	userID := c.Param("id")
+	if userID == "" {
+		c.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing user ID"})
+		return
+	}
+	err := uc.userUsercase.EnableUser(ctx, userID)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	c.IndentedJSON(http.StatusOK, gin.H{"message": "User enabled"})
 }
